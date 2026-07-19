@@ -1,12 +1,14 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 declare global {
   interface Window {
     __bridge: {
       emit: (event: string, payload?: unknown) => void
-      on: (event: string, handler: () => void) => () => void
+      on: (event: string, handler: (payload: { id: string }) => void) => () => void
     }
     __interactionRequests?: number
+    __observedZoneIds?: string[]
+    __stopZoneObserver?: () => void
   }
 }
 
@@ -46,32 +48,156 @@ test('shelf 與 info 事件開啟對應面板', async ({ page }) => {
   await expect(page.getByTestId('store-info')).toBeVisible()
 })
 
-test('從入口實際走到最左商品並按 E 開啟 showcase-5', async ({ page }) => {
+async function waitForZone(page: Page, id: string) {
+  await expect.poll(
+    () => page.evaluate((zoneId) => window.__observedZoneIds?.includes(zoneId), id),
+    { timeout: 4_000, intervals: [50, 100, 200] },
+  ).toBe(true)
+}
+
+async function walkUntilZone(
+  page: Page,
+  key: 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'ArrowUp',
+  id: string,
+) {
+  await page.keyboard.down(key)
+  try {
+    await waitForZone(page, id)
+  } finally {
+    await page.keyboard.up(key)
+  }
+}
+
+test('從入口實際步行到全部七個互動點並開啟正確內容', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'all-seven keyboard walkthrough is desktop acceptance coverage')
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
-  await page.waitForTimeout(500)
+  // Canvas allocation precedes Phaser's scene setup; wait for the scene to
+  // subscribe before starting the deterministic entrance route under parallel E2E load.
+  await page.waitForTimeout(1_200)
   await page.evaluate(() => {
-    window.__interactionRequests = 0
-    window.__bridge.on('zone:enter', () => {
-      window.__interactionRequests = (window.__interactionRequests ?? 0) + 1
+    window.__stopZoneObserver?.()
+    window.__observedZoneIds = []
+    window.__stopZoneObserver = window.__bridge.on('zone:enter', ({ id }) => {
+      window.__observedZoneIds?.push(id)
     })
   })
 
-  await page.keyboard.down('ArrowRight')
-  await page.waitForTimeout(900)
-  await page.keyboard.down('ArrowUp')
-  await page.waitForTimeout(600)
-  await page.keyboard.up('ArrowUp')
-  await expect.poll(
-    () => page.evaluate(() => window.__interactionRequests),
-    { timeout: 4_000 },
-  ).toBe(1)
-  await page.keyboard.up('ArrowRight')
-  await page.keyboard.press('e')
+  try {
+    // The entrance route passes around the central table, then reaches the
+    // leftmost showcase through collision-aware keyboard movement only.
+    await page.keyboard.down('ArrowRight')
+    await page.waitForTimeout(900)
+    await page.keyboard.down('ArrowUp')
+    await page.waitForTimeout(600)
+    await page.keyboard.up('ArrowUp')
+    await waitForZone(page, 'showcase-5')
+    await page.keyboard.up('ArrowRight')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-5-proximity.png',
+    })
 
-  const viewer = page.getByTestId('book-viewer')
-  await expect(viewer).toBeVisible()
-  await expect(viewer).toContainText('獨立刊物選集')
+    await page.keyboard.press('e')
+    const viewer = page.getByTestId('book-viewer')
+    await expect(viewer).toBeVisible()
+    await expect(viewer).toContainText('獨立刊物選集')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-5-overlay.png',
+    })
+
+    // Holding movement during an overlay must not advance the player; closing
+    // it then permits the same keyboard route to continue to showcase-4.
+    const eventCountWhileFrozen = await page.evaluate(
+      () => window.__observedZoneIds?.length,
+    )
+    await page.keyboard.down('ArrowRight')
+    await page.waitForTimeout(350)
+    await expect.poll(
+      () => page.evaluate(() => window.__observedZoneIds?.length),
+    ).toBe(eventCountWhileFrozen)
+    await page.keyboard.up('ArrowRight')
+    await page.getByTestId('close').click()
+    await expect(viewer).not.toBeVisible()
+
+    await walkUntilZone(page, 'ArrowRight', 'showcase-4')
+    await page.keyboard.press('e')
+    await expect(viewer).toContainText('植物染布品')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-4-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await walkUntilZone(page, 'ArrowRight', 'showcase-3')
+    await page.keyboard.press('e')
+    await expect(viewer).toContainText('手作陶器')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-3-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await walkUntilZone(page, 'ArrowRight', 'showcase-2')
+    await page.keyboard.press('e')
+    await expect(viewer).toContainText('插畫明信片')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-2-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await walkUntilZone(page, 'ArrowRight', 'showcase-1')
+    await page.keyboard.press('e')
+    await expect(viewer).toContainText('手工蠟燭系列')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-1-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await page.keyboard.down('ArrowDown')
+    await page.waitForTimeout(3_000)
+    await page.keyboard.up('ArrowDown')
+    await walkUntilZone(page, 'ArrowLeft', 'shelf-1')
+    const shelf = page.getByTestId('shelf-panel')
+    await page.keyboard.press('e')
+    await expect(shelf).toBeVisible()
+    await expect(shelf).toContainText('店主精選')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-shelf-1-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await page.keyboard.down('ArrowRight')
+    await page.waitForTimeout(1_000)
+    await page.keyboard.up('ArrowRight')
+    await page.keyboard.down('ArrowUp')
+    await page.waitForTimeout(2_000)
+    await page.keyboard.up('ArrowUp')
+    await walkUntilZone(page, 'ArrowRight', 'info-1')
+    const info = page.getByTestId('store-info')
+    await page.keyboard.press('e')
+    await expect(info).toBeVisible()
+    await expect(info).toContainText('來實體店逛逛')
+    await page.screenshot({
+      path: '/private/tmp/bookstore-task20-evidence/desktop-info-1-overlay.png',
+    })
+    await page.getByTestId('close').click()
+
+    await expect(page.evaluate(() => window.__observedZoneIds)).resolves.toEqual([
+      'showcase-5',
+      'showcase-4',
+      'showcase-3',
+      'showcase-2',
+      'showcase-1',
+      'shelf-1',
+      'info-1',
+    ])
+  } finally {
+    await Promise.all([
+      page.keyboard.up('ArrowDown'),
+      page.keyboard.up('ArrowLeft'),
+      page.keyboard.up('ArrowRight'),
+      page.keyboard.up('ArrowUp'),
+    ])
+    await page.evaluate(() => window.__stopZoneObserver?.())
+  }
 })
 
 test('手機 action 在 zone 外停用，zone 內送出 request', async ({ page, isMobile }) => {

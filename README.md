@@ -1,7 +1,7 @@
 # 書店虛擬展示空間
 
 2D 遊戲化書店逛展網站。角色走動、展示櫃翻書、書櫃書單、實體店資訊。
-設計文件：`docs/superpowers/specs/2026-07-19-bookstore-virtual-space-design.md`
+設計文件：`docs/superpowers/specs/2026-07-19-bookstore-scene-interactions-design.md`
 
 ## 開發
 
