@@ -14,7 +14,7 @@ export interface CollisionRect {
 }
 
 export const WORLD_SIZE = { width: 1572, height: 1001 } as const
-export const PLAYER_SPAWN: Point = { x: 270, y: 300 }
+export const PLAYER_SPAWN: Point = { x: 1205, y: 250 }
 
 export const COLLISION_RECTS: readonly CollisionRect[] = [
   { id: 'wall-top', x: 40, y: 17, width: 1492, height: 40 },
