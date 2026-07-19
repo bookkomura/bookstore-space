@@ -947,7 +947,8 @@ import {
 import { findNearestZone, type Zone } from './zones'
 
 const SPEED = 160
-const PLAYER_SCALE = 0.28
+// Pai approved 0.72 from the true-size scene comparison.
+const PLAYER_SCALE = 0.72
 
 export class StoreScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
