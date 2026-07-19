@@ -17,6 +17,12 @@ export function validateContent(
 ): string[] {
   const errors: string[] = []
   const zoneIds = zones.map((zone) => zone.id)
+  const showcaseZoneIds = zones
+    .filter((zone) => zone.type === 'showcase')
+    .map((zone) => zone.id)
+  const shelfZoneIds = zones
+    .filter((zone) => zone.type === 'shelf')
+    .map((zone) => zone.id)
   const showcaseIds = content.showcases.map((item) => item.id)
   const shelfIds = content.shelves.map((item) => item.id)
 
@@ -26,7 +32,8 @@ export function validateContent(
 
   const showcaseSet = new Set(showcaseIds)
   const shelfSet = new Set(shelfIds)
-  const zoneSet = new Set(zoneIds)
+  const showcaseZoneSet = new Set(showcaseZoneIds)
+  const shelfZoneSet = new Set(shelfZoneIds)
 
   for (const zone of zones) {
     if (zone.type === 'showcase' && !showcaseSet.has(zone.id)) {
@@ -38,12 +45,12 @@ export function validateContent(
   }
 
   for (const showcase of content.showcases) {
-    if (!zoneSet.has(showcase.id)) {
+    if (!showcaseZoneSet.has(showcase.id)) {
       errors.push(`CMS Showcase「${showcase.title}」(${showcase.id}) 在場景沒有互動點`)
     }
   }
   for (const shelf of content.shelves) {
-    if (!zoneSet.has(shelf.id)) {
+    if (!shelfZoneSet.has(shelf.id)) {
       errors.push(`CMS Shelf「${shelf.title}」(${shelf.id}) 在場景沒有互動點`)
     }
   }
