@@ -14,21 +14,21 @@ export class InteractionMarker {
     title: string,
     onInteract: () => void,
   ) {
-    const shadow = scene.add.circle(0, 3, 21, 0x000000, 0.28)
-    this.glow = scene.add.circle(0, 0, 27, 0xffffff, 0.28).setVisible(false)
+    const shadow = scene.add.circle(0, 2, 10, 0x000000, 0.28)
+    this.glow = scene.add.circle(0, 0, 13, 0xffffff, 0.28).setVisible(false)
     const bubble = scene.add
-      .circle(0, 0, 21, 0xffffff)
-      .setStrokeStyle(2, 0x9ca3af)
+      .circle(0, 0, 10, 0xffffff)
+      .setStrokeStyle(1.5, 0x9ca3af)
     const bang = scene.add
       .text(0, -1, '!', {
         color: '#616161',
         fontFamily: 'Arial, sans-serif',
-        fontSize: '28px',
+        fontSize: '14px',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
     this.label = scene.add
-      .text(31, 0, formatMarkerLabel(title), {
+      .text(18, 0, formatMarkerLabel(title), {
         color: '#4b5563',
         backgroundColor: '#ffffff',
         fontFamily: 'Arial, sans-serif',

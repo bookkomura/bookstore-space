@@ -38,32 +38,32 @@ export const INTERACTION_ZONES: readonly Zone[] = [
   {
     id: 'showcase-1', type: 'showcase',
     x: 1025, y: 270, width: 72, height: 64,
-    anchorX: 1061, anchorY: 248,
+    anchorX: 1057, anchorY: 163,
   },
   {
     id: 'showcase-2', type: 'showcase',
     x: 945, y: 270, width: 72, height: 64,
-    anchorX: 981, anchorY: 248,
+    anchorX: 981, anchorY: 163,
   },
   {
     id: 'showcase-3', type: 'showcase',
     x: 865, y: 270, width: 72, height: 64,
-    anchorX: 901, anchorY: 248,
+    anchorX: 905, anchorY: 163,
   },
   {
     id: 'showcase-4', type: 'showcase',
     x: 785, y: 270, width: 72, height: 64,
-    anchorX: 821, anchorY: 248,
+    anchorX: 828, anchorY: 163,
   },
   {
     id: 'showcase-5', type: 'showcase',
     x: 705, y: 270, width: 72, height: 64,
-    anchorX: 741, anchorY: 248,
+    anchorX: 746, anchorY: 163,
   },
   {
     id: 'shelf-1', type: 'shelf',
-    x: 455, y: 588, width: 530, height: 62,
-    anchorX: 720, anchorY: 548,
+    x: 574, y: 271, width: 200, height: 63,
+    anchorX: 674, anchorY: 352,
   },
   {
     id: 'info-1', type: 'info',
