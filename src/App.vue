@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { bridge } from './bridge/EventBridge'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { bridge, type BridgeEvents } from './bridge/EventBridge'
 import { loadContent } from './content/loadContent'
 import type { ContentBundle, Shelf, Showcase } from './content/schema'
 import { createGame } from './game/createGame'
@@ -16,11 +16,32 @@ const loadError = ref(false)
 const activeShowcase = ref<Showcase | null>(null)
 const activeShelf = ref<Shelf | null>(null)
 const showInfo = ref(false)
-const isTouch = 'ontouchstart' in window
+const currentZone = ref<BridgeEvents['zone:enter'] | null>(null)
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+const uiOpen = computed(
+  () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value),
+)
 
 let game: ReturnType<typeof createGame> | null = null
-let offInteract: (() => void) | null = null
+let bridgeUnsubscribers: (() => void)[] = []
 let isUnmounted = false
+
+function openInteraction({ id, type }: BridgeEvents['interact']) {
+  const currentContent = content.value
+  if (!currentContent) return
+
+  if (type === 'showcase') {
+    activeShowcase.value =
+      currentContent.showcases.find((showcase) => showcase.id === id) ?? null
+  } else if (type === 'shelf') {
+    activeShelf.value =
+      currentContent.shelves.find((shelf) => shelf.id === id) ?? null
+  } else if (type === 'info') {
+    showInfo.value = true
+  }
+
+  if (uiOpen.value) bridge.emit('ui:opened')
+}
 
 onMounted(async () => {
   try {
@@ -31,25 +52,31 @@ onMounted(async () => {
   }
 
   if (isUnmounted || !container.value) return
-  game = createGame(container.value, buildInteractionLabels(content.value))
-
-  offInteract = bridge.on('interact', ({ id, type }) => {
-    const currentContent = content.value
-    if (!currentContent) return
-
-    if (type === 'showcase') activeShowcase.value = currentContent.showcases.find((showcase) => showcase.id === id) ?? null
-    else if (type === 'shelf') activeShelf.value = currentContent.shelves.find((shelf) => shelf.id === id) ?? null
-    else if (type === 'info') showInfo.value = true
-
-    if (activeShowcase.value || activeShelf.value || showInfo.value) bridge.emit('ui:opened')
-  })
+  bridgeUnsubscribers = [
+    bridge.on('interact', openInteraction),
+    bridge.on('zone:enter', (zone) => {
+      currentZone.value = zone
+    }),
+    bridge.on('zone:exit', ({ id }) => {
+      if (currentZone.value?.id === id) currentZone.value = null
+    }),
+  ]
+  game = createGame(
+    container.value,
+    buildInteractionLabels(content.value),
+  )
 })
 
 onUnmounted(() => {
   isUnmounted = true
-  offInteract?.()
+  bridgeUnsubscribers.forEach((unsubscribe) => unsubscribe())
+  bridgeUnsubscribers = []
   game?.destroy(true)
 })
+
+function requestInteract() {
+  if (currentZone.value && !uiOpen.value) bridge.emit('interact:request')
+}
 
 function closeAll() {
   activeShowcase.value = null
@@ -65,7 +92,12 @@ function closeAll() {
   </div>
   <template v-else>
     <div ref="container" class="game" />
-    <TouchControls v-if="isTouch" />
+    <TouchControls
+      v-if="isTouch"
+      :can-interact="Boolean(currentZone)"
+      :disabled="uiOpen"
+      @interact="requestInteract"
+    />
     <BookViewer v-if="activeShowcase" :showcase="activeShowcase" @close="closeAll" />
     <ShelfPanel v-if="activeShelf" :shelf="activeShelf" @close="closeAll" />
     <StoreInfoCard v-if="showInfo && content" :info="content.storeInfo" @close="closeAll" />

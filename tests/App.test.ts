@@ -111,4 +111,16 @@ describe('App', () => {
     expect(game.destroy).toHaveBeenCalledWith(true)
     offOpened()
   })
+
+  it('unmount 後忽略 zone 與 interact 事件', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const wrapper = await mountApp()
+    wrapper.unmount()
+
+    bridge.emit('zone:enter', { id: 'showcase-1', type: 'showcase' })
+    bridge.emit('interact', { id: 'showcase-1', type: 'showcase' })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="book-viewer"]').exists()).toBe(false)
+  })
 })
