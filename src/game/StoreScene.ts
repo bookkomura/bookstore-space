@@ -15,12 +15,17 @@ export class StoreScene extends Phaser.Scene {
   private currentZone: Zone | null = null
   private hint!: Phaser.GameObjects.Text
   private uiOpen = false
+  private bridgeUnsubscribers: (() => void)[] = []
 
   constructor() {
     super('store')
   }
 
   create() {
+    this.removeBridgeListeners()
+    this.currentZone = null
+    this.uiOpen = false
+
     const map = this.make.tilemap({ key: 'map' })
     const tiles = map.addTilesetImage('tileset', 'tiles')!
     map.createLayer('ground', tiles)
@@ -44,12 +49,21 @@ export class StoreScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.input.keyboard!.on('keydown-E', () => this.triggerInteract())
 
-    bridge.on('ui:opened', () => {
-      this.uiOpen = true
-    })
-    bridge.on('ui:closed', () => {
-      this.uiOpen = false
-    })
+    this.bridgeUnsubscribers = [
+      bridge.on('ui:opened', () => {
+        this.uiOpen = true
+      }),
+      bridge.on('ui:closed', () => {
+        this.uiOpen = false
+      }),
+    ]
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.removeBridgeListeners, this)
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.removeBridgeListeners, this)
+  }
+
+  private removeBridgeListeners() {
+    this.bridgeUnsubscribers.forEach((unsubscribe) => unsubscribe())
+    this.bridgeUnsubscribers = []
   }
 
   private triggerInteract() {
