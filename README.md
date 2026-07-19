@@ -7,7 +7,7 @@
 
 ```bash
 npm install
-npm run assets    # 產生佔位素材與地圖（首次必跑）
+npm run assets    # 驗證正式素材
 npm run content   # 產生 content.json（無 token 用 sample）
 npm run dev
 ```
@@ -29,11 +29,22 @@ Component 名稱與欄位（story slug = 地圖互動點 id）：
 - `shelf`：title (Text)、books (Blocks：cover (Asset)、title (Text)、note (Textarea))
 - `store_info`（單一 story，slug 任意）：address、hours (Text)、instagram、map_link (Link)
 
-## 換正式美術素材
+## 圖片場景資產
 
-替換 `scripts/generate-*` 的產出：`public/assets/tileset.png`（32px tiles）、
-`player.png`（32×32）、`map.json`（Tiled 匯出 JSON，需含 `interactions` object layer，
-物件 name = 內容 id、自訂屬性 type = showcase/shelf/info）。格式不變，程式碼零修改。
+- `src/assets/store-background.png`：核准的 1572×1001 書店背景原圖。
+- `src/assets/player-visitor.png`：1024×1024、4×4 玩家 sprite sheet。
+- 玩家 sheet 的列順序為下、左、右、上；欄順序為待機、接觸、經過、反向接觸。
+- `npm run assets` 只驗證正式素材，不會重新產生或覆寫圖片。
+
+## 操作方式
+
+- 電腦：方向鍵移動；靠近白底灰字驚嘆號後按 `E`，或直接點擊已啟用標記。
+- 手機：左下搖桿移動；靠近互動點後，右下「點擊」按鈕會亮起。
+- 商品 1 位於上方展示櫃最右側，向左依序至商品 5；中央長桌是店長選書，右側店員是營業資訊。
+
+## 場景驗收
+
+部署前需在桌機、iOS Safari 與 Android Chrome 確認：七個互動點可到達、家具與 NPC 不可穿越、玩家四方向動畫正確、左右觸控可同時操作、直橫旋轉不重置玩家或破壞版面。
 
 ## 第二階段預留
 
