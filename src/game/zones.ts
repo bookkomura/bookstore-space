@@ -7,11 +7,37 @@ export interface Zone {
   y: number
   width: number
   height: number
+  anchorX: number
+  anchorY: number
 }
 
-export function findZone(px: number, py: number, zones: Zone[]): Zone | null {
-  for (const z of zones) {
-    if (px >= z.x && px <= z.x + z.width && py >= z.y && py <= z.y + z.height) return z
+function contains(px: number, py: number, zone: Zone): boolean {
+  return px >= zone.x
+    && px <= zone.x + zone.width
+    && py >= zone.y
+    && py <= zone.y + zone.height
+}
+
+export function findNearestZone(
+  px: number,
+  py: number,
+  zones: readonly Zone[],
+): Zone | null {
+  let nearest: Zone | null = null
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (const zone of zones) {
+    if (!contains(px, py, zone)) continue
+    const distance = (px - zone.anchorX) ** 2 + (py - zone.anchorY) ** 2
+    if (distance < nearestDistance) {
+      nearest = zone
+      nearestDistance = distance
+    }
   }
-  return null
+
+  return nearest
+}
+
+export function findZone(px: number, py: number, zones: readonly Zone[]): Zone | null {
+  return findNearestZone(px, py, zones)
 }

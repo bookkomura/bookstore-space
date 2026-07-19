@@ -1,20 +1,33 @@
-import { describe, it, expect } from 'vitest'
-import { findZone, type Zone } from '../src/game/zones'
+import { describe, expect, it } from 'vitest'
+import { findNearestZone, type Zone } from '../src/game/zones'
 
 const zones: Zone[] = [
-  { id: 'showcase-1', type: 'showcase', x: 100, y: 100, width: 64, height: 64 },
-  { id: 'shelf-1', type: 'shelf', x: 300, y: 100, width: 64, height: 64 },
+  {
+    id: 'showcase-1', type: 'showcase',
+    x: 100, y: 100, width: 80, height: 80,
+    anchorX: 170, anchorY: 120,
+  },
+  {
+    id: 'showcase-2', type: 'showcase',
+    x: 140, y: 100, width: 80, height: 80,
+    anchorX: 150, anchorY: 120,
+  },
 ]
 
-describe('findZone', () => {
-  it('點在區域內回傳該 zone', () => {
-    expect(findZone(110, 110, zones)?.id).toBe('showcase-1')
+describe('findNearestZone', () => {
+  it('區域不重疊時回傳包含座標的 zone', () => {
+    expect(findNearestZone(110, 110, zones)?.id).toBe('showcase-1')
   })
-  it('點在邊界上（含）回傳該 zone', () => {
-    expect(findZone(100, 100, zones)?.id).toBe('showcase-1')
-    expect(findZone(164, 164, zones)?.id).toBe('showcase-1')
+
+  it('重疊時回傳互動錨點最近的 zone', () => {
+    expect(findNearestZone(150, 130, zones)?.id).toBe('showcase-2')
   })
-  it('點在所有區域外回傳 null', () => {
-    expect(findZone(0, 0, zones)).toBeNull()
+
+  it('等距時維持設定陣列順序', () => {
+    expect(findNearestZone(160, 120, zones)?.id).toBe('showcase-1')
+  })
+
+  it('所有區域外回傳 null', () => {
+    expect(findNearestZone(0, 0, zones)).toBeNull()
   })
 })

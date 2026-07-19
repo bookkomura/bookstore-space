@@ -28,6 +28,8 @@ export function parseInteractionZones(mapJson: unknown): Zone[] {
       y: obj.y,
       width: obj.width,
       height: obj.height,
+      anchorX: obj.x + obj.width / 2,
+      anchorY: obj.y,
     }
   })
 }
