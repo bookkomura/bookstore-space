@@ -17,6 +17,36 @@
         { "image": "https://placehold.co/600x800/c8dcf5/333?text=Postcard+1", "caption": "台東系列——金崙海岸的日出。" },
         { "image": "https://placehold.co/600x800/b5cde8/333?text=Postcard+2", "caption": "台東系列——鹿野高台的熱氣球。" }
       ]
+    },
+    {
+      "id": "showcase-3",
+      "title": "手作陶器",
+      "pages": [
+        {
+          "image": "https://placehold.co/600x800/d8c3a5/333?text=Pottery",
+          "caption": "以台灣土料燒製的日常器皿，每件保留手工痕跡。"
+        }
+      ]
+    },
+    {
+      "id": "showcase-4",
+      "title": "植物染布品",
+      "pages": [
+        {
+          "image": "https://placehold.co/600x800/b8c7a3/333?text=Textile",
+          "caption": "以在地植物染製的小方巾與布包。"
+        }
+      ]
+    },
+    {
+      "id": "showcase-5",
+      "title": "獨立刊物選集",
+      "pages": [
+        {
+          "image": "https://placehold.co/600x800/c8b7a6/333?text=Zine",
+          "caption": "收錄地方創作者的攝影、插畫與生活書寫。"
+        }
+      ]
     }
   ],
   "shelves": [

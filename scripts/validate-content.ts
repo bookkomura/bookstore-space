@@ -1,21 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { ContentBundleSchema } from '../src/content/schema'
 import { validateContent } from '../src/content/validate'
+import { INTERACTION_ZONES } from '../src/game/sceneLayout'
 
-const map = JSON.parse(readFileSync('public/assets/map.json', 'utf8'))
 const raw = JSON.parse(readFileSync('public/content.json', 'utf8'))
-
 const parsed = ContentBundleSchema.safeParse(raw)
+
 if (!parsed.success) {
   console.error('✗ content.json 格式錯誤：')
-  for (const issue of parsed.error.issues) console.error(`  - ${issue.path.join('.')}: ${issue.message}`)
+  for (const issue of parsed.error.issues) {
+    console.error(`  - ${issue.path.join('.')}: ${issue.message}`)
+  }
   process.exit(1)
 }
 
-const errors = validateContent(map, parsed.data)
+const errors = validateContent(INTERACTION_ZONES, parsed.data)
 if (errors.length > 0) {
   console.error('✗ 內容驗證失敗：')
-  for (const e of errors) console.error(`  - ${e}`)
+  for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
+
 console.log('✓ 內容驗證通過')
