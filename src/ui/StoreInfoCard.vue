@@ -7,7 +7,7 @@ const emit = defineEmits<{ close: [] }>()
 
 <template>
   <div class="overlay" data-testid="store-info">
-    <div class="card">
+    <div class="card" style="box-sizing: border-box">
       <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
       <h2>來實體店逛逛</h2>
       <p>{{ info.address }}</p>

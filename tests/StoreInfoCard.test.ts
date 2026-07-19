@@ -24,4 +24,9 @@ describe('StoreInfoCard', () => {
     await w.get('[data-testid="close"]').trigger('click')
     expect(w.emitted('close')).toHaveLength(1)
   })
+
+  it('在窄版直式視窗以 border-box 保持卡片在 overlay 內', () => {
+    const w = mount(StoreInfoCard, { props: { info } })
+    expect(getComputedStyle(w.get('.card').element).boxSizing).toBe('border-box')
+  })
 })
