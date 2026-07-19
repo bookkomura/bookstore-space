@@ -8,7 +8,7 @@ phase: plan
 progress: 8/50
 mode: interactive
 started: 2026-07-19T00:00:00+08:00
-updated: 2026-07-19T00:02:00+08:00
+updated: 2026-07-19T00:04:00+08:00
 ---
 
 ## Problem
@@ -197,6 +197,8 @@ updated: 2026-07-19T00:02:00+08:00
 - 2026-07-19 00:03: Advisor 指出後續 brief 可能因前一 Task 的實際介面而陳舊；每個 review clean 後，controller 必須把下一份 brief 與當前 tree 做一次相容性核對。
 - 2026-07-19 00:03: 同一 Task 最多兩輪 Terra fix/re-review；仍有 Critical/Important 或同一阻塞重現時，不降低標準，改由 controller 升級阻塞。
 - 2026-07-19 00:03: Terra implementer 與 Terra reviewer 的盲點具相關性；task gates 只算局部證據，最終 fable 與 Cato cross-model audit 承擔 whole-branch 反相關檢查。
+- 2026-07-19 00:04: Controller context-hygiene gate 觸發於 Task 3 派工前；本 session 不開始 Task 3，先以 HANDOFF、ledger、ISA 與 git 建立安全恢復點。
+- 2026-07-19 00:04: 跨 session 記憶以 repo artifacts 與 git 為準；新 gpt-5.6-sol controller 必須從第一個未完成 Task 恢復，不依賴壓縮後聊天上下文。
 
 ## Changelog
 
@@ -215,3 +217,5 @@ updated: 2026-07-19T00:02:00+08:00
 - ISC-6: Task 2 report — missing storeInfo rejection passed.
 - ISC-7: Task 2 report — HTTP failure path test passed.
 - ISC-8: Task 2 ledger — focused suite 5/5 and review adjudicated clean.
+- Controller baseline: `npm run test` — 2 test files, 5 tests passed before Task 3 dispatch.
+- Handoff boundary: collaboration agent list contained only `/root`; no Terra implementer or reviewer was in flight.
