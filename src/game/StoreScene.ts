@@ -4,6 +4,13 @@ import { calculateCameraZoom } from './camera'
 import { touchInput } from './inputState'
 import { computeVelocity } from './movement'
 import {
+  facingFromVelocity,
+  idleFrame,
+  walkAnimation,
+  walkFrames,
+  type Facing,
+} from './playerAnimation'
+import {
   COLLISION_RECTS,
   INTERACTION_ZONES,
   PLAYER_SPAWN,
@@ -21,6 +28,7 @@ export class StoreScene extends Phaser.Scene {
   private currentZone: Zone | null = null
   private hint!: Phaser.GameObjects.Text
   private uiOpen = false
+  private facing: Facing = 'down'
   private bridgeUnsubscribers: (() => void)[] = []
 
   constructor() {
@@ -56,6 +64,8 @@ export class StoreScene extends Phaser.Scene {
       .setScale(PLAYER_SCALE)
       .setDepth(10)
       .setCollideWorldBounds(true)
+    this.createPlayerAnimations()
+    this.player.setFrame(idleFrame(this.facing))
 
     const body = this.player.body as Phaser.Physics.Arcade.Body
     body.setSize(64, 40)
@@ -122,9 +132,33 @@ export class StoreScene extends Phaser.Scene {
     })
   }
 
+  private createPlayerAnimations() {
+    for (const facing of ['down', 'left', 'right', 'up'] as const) {
+      const key = walkAnimation(facing)
+      if (this.anims.exists(key)) continue
+      this.anims.create({
+        key,
+        frames: walkFrames(facing).map((frame) => ({ key: 'player', frame })),
+        frameRate: 8,
+        repeat: -1,
+      })
+    }
+  }
+
+  private updatePlayerAnimation(vx: number, vy: number) {
+    this.facing = facingFromVelocity(vx, vy, this.facing)
+    if (vx === 0 && vy === 0) {
+      this.player.anims.stop()
+      this.player.setFrame(idleFrame(this.facing))
+      return
+    }
+    this.player.anims.play(walkAnimation(this.facing), true)
+  }
+
   update() {
     if (this.uiOpen) {
       this.player.setVelocity(0, 0)
+      this.updatePlayerAnimation(0, 0)
       return
     }
 
@@ -138,6 +172,7 @@ export class StoreScene extends Phaser.Scene {
     }
     const velocity = computeVelocity(direction, SPEED)
     this.player.setVelocity(velocity.x, velocity.y)
+    this.updatePlayerAnimation(velocity.x, velocity.y)
 
     const body = this.player.body as Phaser.Physics.Arcade.Body
     const zone = findNearestZone(
