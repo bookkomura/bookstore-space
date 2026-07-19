@@ -4,6 +4,7 @@ import { bridge } from './bridge/EventBridge'
 import { loadContent } from './content/loadContent'
 import type { ContentBundle, Shelf, Showcase } from './content/schema'
 import { createGame } from './game/createGame'
+import { buildInteractionLabels } from './game/interactionLabels'
 import BookViewer from './ui/BookViewer.vue'
 import ShelfPanel from './ui/ShelfPanel.vue'
 import StoreInfoCard from './ui/StoreInfoCard.vue'
@@ -30,7 +31,7 @@ onMounted(async () => {
   }
 
   if (isUnmounted || !container.value) return
-  game = createGame(container.value)
+  game = createGame(container.value, buildInteractionLabels(content.value))
 
   offInteract = bridge.on('interact', ({ id, type }) => {
     const currentContent = content.value

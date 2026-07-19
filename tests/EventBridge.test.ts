@@ -23,4 +23,12 @@ describe('EventBridge', () => {
     const b = new EventBridge()
     expect(() => b.emit('ui:opened')).not.toThrow()
   })
+
+  it('interact:request 可在沒有 payload 時觸發', () => {
+    const b = new EventBridge()
+    const fn = vi.fn()
+    b.on('interact:request', fn)
+    b.emit('interact:request')
+    expect(fn).toHaveBeenCalledOnce()
+  })
 })

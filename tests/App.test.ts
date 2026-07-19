@@ -58,6 +58,14 @@ describe('App', () => {
     const wrapper = await mountApp()
 
     expect(mocks.createGame).toHaveBeenCalledOnce()
+    expect(mocks.createGame).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({
+        'showcase-1': '手工蠟燭系列',
+        'shelf-1': '店主精選',
+        'info-1': '營業資訊',
+      }),
+    )
     bridge.emit('interact', { id: 'showcase-1', type: 'showcase' })
     await flushPromises()
 

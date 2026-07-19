@@ -1,7 +1,9 @@
 import Phaser from 'phaser'
 import { bridge } from '../bridge/EventBridge'
 import { calculateCameraZoom } from './camera'
+import { InteractionMarker } from './InteractionMarker'
 import { touchInput } from './inputState'
+import type { InteractionLabels } from './interactionLabels'
 import { computeVelocity } from './movement'
 import {
   facingFromVelocity,
@@ -26,12 +28,12 @@ export class StoreScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private currentZone: Zone | null = null
-  private hint!: Phaser.GameObjects.Text
+  private markers = new Map<string, InteractionMarker>()
   private uiOpen = false
   private facing: Facing = 'down'
   private bridgeUnsubscribers: (() => void)[] = []
 
-  constructor() {
+  constructor(private readonly labels?: InteractionLabels) {
     super('store')
   }
 
@@ -78,18 +80,24 @@ export class StoreScene extends Phaser.Scene {
     this.resizeCamera()
     this.scale.on('resize', this.resizeCamera, this)
 
-    this.hint = this.add
-      .text(0, 0, '按 E 互動', {
-        fontSize: '14px',
-        color: '#4b5563',
-        backgroundColor: '#ffffff',
-        padding: { x: 8, y: 4 },
-      })
-      .setOrigin(0.5, 1)
-      .setDepth(20)
-      .setVisible(false)
-      .setInteractive({ useHandCursor: true })
-    this.hint.on('pointerdown', this.triggerInteract, this)
+    if (this.labels) {
+      for (const zone of INTERACTION_ZONES) {
+        const label = this.labels[zone.id]
+        if (!label) throw new Error(`互動點 ${zone.id} 缺少顯示名稱`)
+        this.markers.set(
+          zone.id,
+          new InteractionMarker(
+            this,
+            zone.anchorX,
+            zone.anchorY,
+            label,
+            () => {
+              if (this.currentZone?.id === zone.id) this.triggerInteract()
+            },
+          ),
+        )
+      }
+    }
 
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.input.keyboard!.on('keydown-E', this.triggerInteract, this)
@@ -104,6 +112,7 @@ export class StoreScene extends Phaser.Scene {
       bridge.on('ui:closed', () => {
         this.uiOpen = false
       }),
+      bridge.on('interact:request', () => this.triggerInteract()),
     ]
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.removeListeners, this)
@@ -122,6 +131,8 @@ export class StoreScene extends Phaser.Scene {
     this.bridgeUnsubscribers = []
     this.scale.off('resize', this.resizeCamera, this)
     this.input.keyboard?.off('keydown-E', this.triggerInteract, this)
+    for (const marker of this.markers.values()) marker.destroy()
+    this.markers.clear()
     touchInput.x = 0
     touchInput.y = 0
   }
@@ -185,13 +196,12 @@ export class StoreScene extends Phaser.Scene {
 
     if (zone?.id === this.currentZone?.id) return
     if (this.currentZone) {
+      this.markers.get(this.currentZone.id)?.setActive(false)
       bridge.emit('zone:exit', { id: this.currentZone.id })
     }
     if (zone) {
+      this.markers.get(zone.id)?.setActive(true)
       bridge.emit('zone:enter', { id: zone.id, type: zone.type })
-      this.hint.setPosition(zone.anchorX, zone.anchorY).setVisible(true)
-    } else {
-      this.hint.setVisible(false)
     }
     this.currentZone = zone
   }

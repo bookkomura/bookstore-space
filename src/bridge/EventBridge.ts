@@ -2,6 +2,7 @@ import type { ZoneType } from '../game/zones'
 
 export interface BridgeEvents {
   'interact': { id: string; type: ZoneType }
+  'interact:request': undefined
   'zone:enter': { id: string; type: ZoneType }
   'zone:exit': { id: string }
   'ui:opened': undefined

@@ -1,8 +1,12 @@
 import Phaser from 'phaser'
 import { BootScene } from './BootScene'
+import type { InteractionLabels } from './interactionLabels'
 import { StoreScene } from './StoreScene'
 
-export function createGame(parent: HTMLElement): Phaser.Game {
+export function createGame(
+  parent: HTMLElement,
+  labels: InteractionLabels,
+): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -14,6 +18,6 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: { default: 'arcade' },
-    scene: [BootScene, StoreScene],
+    scene: [BootScene, new StoreScene(labels)],
   })
 }
