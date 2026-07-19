@@ -56,4 +56,16 @@ describe('mapStoriesToBundle', () => {
   it('缺 store_info story 時丟出錯誤', () => {
     expect(() => mapStoriesToBundle(stories.slice(0, 2))).toThrow('store_info')
   })
+
+  it('拒絕在執行期傳入非陣列的 stories 容器', () => {
+    expect(() => mapStoriesToBundle({ stories } as unknown as unknown[])).toThrow('CMS 內容格式錯誤')
+  })
+
+  it.each([
+    ['showcase', { ...stories[0], content: { ...stories[0].content, pages: null } }],
+    ['shelf', { ...stories[1], content: { ...stories[1].content, books: null } }],
+  ])('以描述性 CMS 錯誤拒絕格式錯誤的 %s', (_component, malformedStory) => {
+    expect(() => mapStoriesToBundle([malformedStory, stories[2]])).toThrow('CMS 內容格式錯誤')
+    expect(() => mapStoriesToBundle([malformedStory, stories[2]])).not.toThrow(/Cannot read|undefined|null/)
+  })
 })

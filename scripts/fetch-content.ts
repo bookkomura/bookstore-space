@@ -1,5 +1,6 @@
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { mapStoriesToBundle } from '../src/content/storyblok'
+import type { ContentBundle } from '../src/content/schema'
 
 mkdirSync('public', { recursive: true })
 const token = process.env.STORYBLOK_TOKEN
@@ -17,7 +18,20 @@ if (!response.ok) {
   process.exit(1)
 }
 
-const { stories } = (await response.json()) as { stories: unknown[] }
-const bundle = mapStoriesToBundle(stories)
+const payload: unknown = await response.json()
+const stories =
+  typeof payload === 'object' && payload !== null && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>).stories
+    : undefined
+
+let bundle: ContentBundle
+try {
+  bundle = mapStoriesToBundle(stories as unknown[])
+} catch (error) {
+  const message = error instanceof Error ? error.message : '未知 CMS 內容錯誤'
+  console.error(`✗ ${message}`)
+  process.exit(1)
+}
+
 writeFileSync('public/content.json', JSON.stringify(bundle, null, 2))
 console.log(`✓ 已從 Storyblok 抓取 ${bundle.showcases.length} 個展示櫃、${bundle.shelves.length} 個書櫃`)
