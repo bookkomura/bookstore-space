@@ -1,6 +1,11 @@
 import Phaser from 'phaser'
 
+const backgroundUrl = new URL('../assets/store-background.png', import.meta.url).href
+const playerUrl = new URL('../assets/player-visitor.png', import.meta.url).href
+
 export class BootScene extends Phaser.Scene {
+  private assetFailed = false
+
   constructor() {
     super('boot')
   }
@@ -8,21 +13,41 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const { width, height } = this.scale
     const barBg = this.add.rectangle(width / 2, height / 2, 204, 16, 0x444444)
-    const bar = this.add.rectangle(width / 2 - 100, height / 2, 0, 12, 0xd8c9a3).setOrigin(0, 0.5)
-    this.load.on('progress', (v: number) => {
-      bar.width = 200 * v
+    const bar = this.add
+      .rectangle(width / 2 - 100, height / 2, 0, 12, 0xd8c9a3)
+      .setOrigin(0, 0.5)
+
+    this.load.on('progress', (value: number) => {
+      bar.width = 200 * value
     })
-    this.load.on('complete', () => {
+    this.load.once('loaderror', () => {
+      this.assetFailed = true
+    })
+    this.load.once('complete', () => {
       bar.destroy()
       barBg.destroy()
     })
 
-    this.load.image('tiles', '/assets/tileset.png')
-    this.load.image('player', '/assets/player.png')
-    this.load.tilemapTiledJSON('map', '/assets/map.json')
+    this.load.image('store-background', backgroundUrl)
+    this.load.spritesheet('player', playerUrl, {
+      frameWidth: 256,
+      frameHeight: 256,
+    })
   }
 
   create() {
+    if (this.assetFailed) {
+      this.add
+        .text(
+          this.scale.width / 2,
+          this.scale.height / 2,
+          '場景素材載入失敗，請重新整理再試一次。',
+          { color: '#f5efe0', fontSize: '18px', align: 'center' },
+        )
+        .setOrigin(0.5)
+      return
+    }
+
     this.scene.start('store')
   }
 }

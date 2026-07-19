@@ -1,17 +1,23 @@
 import Phaser from 'phaser'
 import { bridge } from '../bridge/EventBridge'
+import { calculateCameraZoom } from './camera'
 import { touchInput } from './inputState'
-import { parseInteractionZones } from './mapParser'
 import { computeVelocity } from './movement'
-import { findZone, type Zone } from './zones'
+import {
+  COLLISION_RECTS,
+  INTERACTION_ZONES,
+  PLAYER_SPAWN,
+  WORLD_SIZE,
+} from './sceneLayout'
+import { findNearestZone, type Zone } from './zones'
 
 const SPEED = 160
-const SPAWN = { x: 320, y: 240 }
+// Pai approved 0.72 from the true-size scene comparison.
+const PLAYER_SCALE = 0.72
 
 export class StoreScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
-  private zones: Zone[] = []
   private currentZone: Zone | null = null
   private hint!: Phaser.GameObjects.Text
   private uiOpen = false
@@ -22,53 +28,98 @@ export class StoreScene extends Phaser.Scene {
   }
 
   create() {
-    this.removeBridgeListeners()
+    this.removeListeners()
     this.currentZone = null
     this.uiOpen = false
 
-    const map = this.make.tilemap({ key: 'map' })
-    const tiles = map.addTilesetImage('tileset', 'tiles')!
-    map.createLayer('ground', tiles)
-    const walls = map.createLayer('walls', tiles)!
-    walls.setCollision(2)
+    this.add.image(0, 0, 'store-background').setOrigin(0).setDepth(0)
+    this.physics.world.setBounds(0, 0, WORLD_SIZE.width, WORLD_SIZE.height)
 
-    this.player = this.physics.add.sprite(SPAWN.x, SPAWN.y, 'player')
-    this.physics.add.collider(this.player, walls)
-    this.cameras.main.startFollow(this.player)
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
+    const obstacles = this.physics.add.staticGroup()
+    for (const rect of COLLISION_RECTS) {
+      const obstacle = this.add
+        .rectangle(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+          rect.width,
+          rect.height,
+          0x000000,
+          0,
+        )
+        .setVisible(false)
+      this.physics.add.existing(obstacle, true)
+      obstacles.add(obstacle)
+    }
 
-    this.zones = parseInteractionZones(this.cache.tilemap.get('map')!.data)
+    this.player = this.physics.add
+      .sprite(PLAYER_SPAWN.x, PLAYER_SPAWN.y, 'player', 0)
+      .setScale(PLAYER_SCALE)
+      .setDepth(10)
+      .setCollideWorldBounds(true)
+
+    const body = this.player.body as Phaser.Physics.Arcade.Body
+    body.setSize(64, 40)
+    body.setOffset(96, 196)
+    this.physics.add.collider(this.player, obstacles)
+
+    this.cameras.main
+      .startFollow(this.player, true, 0.12, 0.12)
+      .setBounds(0, 0, WORLD_SIZE.width, WORLD_SIZE.height)
+    this.resizeCamera()
+    this.scale.on('resize', this.resizeCamera, this)
 
     this.hint = this.add
-      .text(0, 0, '點擊翻閱', { fontSize: '14px', backgroundColor: '#000000', padding: { x: 8, y: 4 } })
+      .text(0, 0, '按 E 互動', {
+        fontSize: '14px',
+        color: '#4b5563',
+        backgroundColor: '#ffffff',
+        padding: { x: 8, y: 4 },
+      })
       .setOrigin(0.5, 1)
-      .setDepth(10)
+      .setDepth(20)
       .setVisible(false)
       .setInteractive({ useHandCursor: true })
-    this.hint.on('pointerdown', () => this.triggerInteract())
-    this.cursors = this.input.keyboard!.createCursorKeys()
-    this.input.keyboard!.on('keydown-E', () => this.triggerInteract())
+    this.hint.on('pointerdown', this.triggerInteract, this)
 
+    this.cursors = this.input.keyboard!.createCursorKeys()
+    this.input.keyboard!.on('keydown-E', this.triggerInteract, this)
     this.bridgeUnsubscribers = [
       bridge.on('ui:opened', () => {
         this.uiOpen = true
+        touchInput.x = 0
+        touchInput.y = 0
       }),
       bridge.on('ui:closed', () => {
         this.uiOpen = false
       }),
     ]
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.removeBridgeListeners, this)
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.removeBridgeListeners, this)
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.removeListeners, this)
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.removeListeners, this)
   }
 
-  private removeBridgeListeners() {
+  private resizeCamera() {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    this.cameras.main.setZoom(
+      calculateCameraZoom(this.scale.width, this.scale.height, isTouch),
+    )
+  }
+
+  private removeListeners() {
     this.bridgeUnsubscribers.forEach((unsubscribe) => unsubscribe())
     this.bridgeUnsubscribers = []
+    this.scale.off('resize', this.resizeCamera, this)
+    this.input.keyboard?.off('keydown-E', this.triggerInteract, this)
+    touchInput.x = 0
+    touchInput.y = 0
   }
 
   private triggerInteract() {
     if (!this.currentZone || this.uiOpen) return
-    bridge.emit('interact', { id: this.currentZone.id, type: this.currentZone.type })
+    bridge.emit('interact', {
+      id: this.currentZone.id,
+      type: this.currentZone.type,
+    })
   }
 
   update() {
@@ -77,23 +128,34 @@ export class StoreScene extends Phaser.Scene {
       return
     }
 
-    const dir = {
-      x: (this.cursors.left.isDown ? -1 : 0) + (this.cursors.right.isDown ? 1 : 0) + touchInput.x,
-      y: (this.cursors.up.isDown ? -1 : 0) + (this.cursors.down.isDown ? 1 : 0) + touchInput.y,
+    const direction = {
+      x: (this.cursors.left.isDown ? -1 : 0)
+        + (this.cursors.right.isDown ? 1 : 0)
+        + touchInput.x,
+      y: (this.cursors.up.isDown ? -1 : 0)
+        + (this.cursors.down.isDown ? 1 : 0)
+        + touchInput.y,
     }
-    const v = computeVelocity(dir, SPEED)
-    this.player.setVelocity(v.x, v.y)
+    const velocity = computeVelocity(direction, SPEED)
+    this.player.setVelocity(velocity.x, velocity.y)
 
-    const zone = findZone(this.player.x, this.player.y, this.zones)
-    if (zone !== this.currentZone) {
-      if (this.currentZone) bridge.emit('zone:exit', { id: this.currentZone.id })
-      if (zone) {
-        bridge.emit('zone:enter', { id: zone.id, type: zone.type })
-        this.hint.setPosition(zone.x + zone.width / 2, zone.y - 8).setVisible(true)
-      } else {
-        this.hint.setVisible(false)
-      }
-      this.currentZone = zone
+    const body = this.player.body as Phaser.Physics.Arcade.Body
+    const zone = findNearestZone(
+      body.center.x,
+      body.center.y,
+      INTERACTION_ZONES,
+    )
+
+    if (zone?.id === this.currentZone?.id) return
+    if (this.currentZone) {
+      bridge.emit('zone:exit', { id: this.currentZone.id })
     }
+    if (zone) {
+      bridge.emit('zone:enter', { id: zone.id, type: zone.type })
+      this.hint.setPosition(zone.anchorX, zone.anchorY).setVisible(true)
+    } else {
+      this.hint.setVisible(false)
+    }
+    this.currentZone = zone
   }
 }

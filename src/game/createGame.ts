@@ -6,10 +6,13 @@ export function createGame(parent: HTMLElement): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: 640,
-    height: 480,
-    backgroundColor: '#222222',
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: '#090909',
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
     physics: { default: 'arcade' },
     scene: [BootScene, StoreScene],
   })

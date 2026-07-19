@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "assets": "tsx scripts/generate-placeholder-assets.ts && tsx scripts/generate-map.ts",
+    "assets": "tsx scripts/validate-scene-assets.ts",
     "content": "tsx scripts/fetch-content.ts",
     "validate": "tsx scripts/validate-content.ts",
     "build": "npm run assets && npm run content && npm run validate && vite build",
