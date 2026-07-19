@@ -98,6 +98,8 @@ export class StoreScene extends Phaser.Scene {
         this.uiOpen = true
         touchInput.x = 0
         touchInput.y = 0
+        this.player.setVelocity(0, 0)
+        this.updatePlayerAnimation(0, 0)
       }),
       bridge.on('ui:closed', () => {
         this.uiOpen = false
