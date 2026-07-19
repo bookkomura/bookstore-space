@@ -16,4 +16,8 @@ describe('joystickVector', () => {
   it('原地不動回傳零向量', () => {
     expect(joystickVector({ x: 100, y: 100 }, { x: 100, y: 100 }, 40)).toEqual({ x: 0, y: 0 })
   })
+
+  it('半徑為零時回傳有限的零向量', () => {
+    expect(joystickVector({ x: 100, y: 100 }, { x: 120, y: 100 }, 0)).toEqual({ x: 0, y: 0 })
+  })
 })
