@@ -46,7 +46,8 @@ function openInteraction({ id, type }: BridgeEvents['interact']) {
 onMounted(async () => {
   try {
     content.value = await loadContent()
-  } catch {
+  } catch (e){
+    console.error('Failed to load content', e)
     if (!isUnmounted) loadError.value = true
     return
   }
