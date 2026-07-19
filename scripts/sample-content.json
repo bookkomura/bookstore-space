@@ -1,0 +1,38 @@
+{
+  "showcases": [
+    {
+      "id": "showcase-1",
+      "title": "手工蠟燭系列",
+      "creatorLink": "https://instagram.com/example_creator",
+      "pages": [
+        { "image": "https://placehold.co/600x800/f5e6c8/333?text=Candle+1", "caption": "海鹽香氛蠟燭——以台東海岸的氣味為靈感，手工澆製。" },
+        { "image": "https://placehold.co/600x800/e8d5b5/333?text=Candle+2", "caption": "森林苔蘚蠟燭——雨後森林的濕潤氣息。" },
+        { "image": "https://placehold.co/600x800/d9c4a0/333?text=Candle+3", "caption": "製作過程：每一顆都經過三次澆蠟與修整。" }
+      ]
+    },
+    {
+      "id": "showcase-2",
+      "title": "插畫明信片",
+      "pages": [
+        { "image": "https://placehold.co/600x800/c8dcf5/333?text=Postcard+1", "caption": "台東系列——金崙海岸的日出。" },
+        { "image": "https://placehold.co/600x800/b5cde8/333?text=Postcard+2", "caption": "台東系列——鹿野高台的熱氣球。" }
+      ]
+    }
+  ],
+  "shelves": [
+    {
+      "id": "shelf-1",
+      "title": "店主精選",
+      "books": [
+        { "cover": "https://placehold.co/300x420/a3d8b0/333?text=Book+1", "title": "我可能錯了", "note": "店主今年讀過最平靜的一本書。" },
+        { "cover": "https://placehold.co/300x420/90c9a0/333?text=Book+2", "title": "射鵰英雄傳", "note": "永遠的江湖入門。" }
+      ]
+    }
+  ],
+  "storeInfo": {
+    "address": "台東市中山路 123 號",
+    "hours": "週三至週日 11:00–19:00",
+    "instagram": "https://instagram.com/example_bookstore",
+    "mapLink": "https://maps.google.com/?q=台東市中山路123號"
+  }
+}

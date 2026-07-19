@@ -8,7 +8,8 @@
     "lib": ["ES2022", "DOM"],
     "types": ["vitest/globals"],
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "resolveJsonModule": true
   },
   "include": ["src", "tests", "scripts", "e2e"]
 }
