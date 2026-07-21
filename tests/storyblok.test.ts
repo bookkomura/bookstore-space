@@ -71,6 +71,15 @@ describe('mapStoriesToBundle', () => {
     expect(bundle.newsletters[0]).not.toHaveProperty('sourceMessageId')
   })
 
+  it('rejects a newsletter sent_at that is not a string with a CMS-content error', () => {
+    const malformedNewsletter = structuredClone(newerNewsletter) as any
+    malformedNewsletter.content.sent_at = null
+
+    expect(() => mapStoriesToBundle([...stories, malformedNewsletter])).toThrow(
+      'CMS 內容格式錯誤：newsletter newsletter-new 的 sent_at 必須是字串',
+    )
+  })
+
   it('把三種 component 映射成 ContentBundle', () => {
     const bundle = mapStoriesToBundle(stories)
     expect(bundle.showcases[0]).toEqual({

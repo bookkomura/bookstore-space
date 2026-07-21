@@ -29,6 +29,7 @@ const content: ContentBundle = {
     instagram: 'https://instagram.com/store',
     mapLink: 'https://maps.google.com/?q=store',
   },
+  newsletters: [],
 }
 
 const wrappers: VueWrapper[] = []

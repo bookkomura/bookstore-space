@@ -91,9 +91,13 @@ export function mapStoriesToBundle(rawStories: unknown[]): ContentBundle {
     .filter((story) => story.content.component === 'newsletter')
     .map((story) => {
       const blocks = readArray(story.content.blocks, `newsletter ${story.slug} 的 blocks`)
+      const sentAt = story.content.sent_at
+      if (typeof sentAt !== 'string') {
+        invalidContent(`newsletter ${story.slug} 的 sent_at 必須是字串`)
+      }
 
       return {
-        sentAt: story.content.sent_at,
+        sentAt,
         subject: story.content.subject,
         blocks: blocks.map((block, index) => {
           const item = readRecord(block, `newsletter ${story.slug} 的 blocks[${index}]`)
