@@ -63,7 +63,7 @@ function onTouchEnd(event: TouchEvent) {
         target="_blank"
         rel="noopener"
         aria-label="認識創作者（在新分頁開啟）"
-      >認識創作者 <span aria-hidden="true">↗</span></a>
+      >認識創作者</a>
       <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
     </header>
 
