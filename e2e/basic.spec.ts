@@ -36,6 +36,69 @@ test('interact 事件開啟翻書、翻頁、關閉', async ({ page }) => {
   await expect(viewer).not.toBeVisible()
 })
 
+test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
+
+  await page.evaluate(() => {
+    window.__bridge.emit('interact', { id: 'showcase-1', type: 'showcase' })
+  })
+
+  const viewer = page.getByTestId('book-viewer')
+  const creatorLink = page.getByTestId('creator-link')
+  const layout = () => viewer.evaluate((root) => {
+    const rect = (selector: string) => {
+      const element = root.querySelector<HTMLElement>(selector)
+      if (!element) throw new Error(`Missing BookViewer element: ${selector}`)
+      const { x, y, width, height } = element.getBoundingClientRect()
+      return { x, y, width, height }
+    }
+
+    return {
+      header: rect('header'),
+      page: rect('.page'),
+      footer: rect('footer'),
+    }
+  })
+
+  await expect(creatorLink).toHaveText('認識創作者 ↗')
+  await expect(creatorLink).not.toHaveClass(/creator--emphasized/)
+  const firstPageLayout = await layout()
+
+  await page.getByTestId('next').click()
+  await page.getByTestId('next').click()
+  await expect(viewer).toContainText('3 / 3')
+  await expect(creatorLink).toHaveClass(/creator--emphasized/)
+  expect(await layout()).toEqual(firstPageLayout)
+
+  await page.setViewportSize({ width: 320, height: 568 })
+
+  const mobileHeader = await viewer.evaluate((root) => {
+    const bounds = (selector: string) => {
+      const element = root.querySelector<HTMLElement>(selector)
+      if (!element) throw new Error(`Missing BookViewer element: ${selector}`)
+      const box = element.getBoundingClientRect()
+      return { left: box.left, right: box.right, width: box.width }
+    }
+    const title = root.querySelector<HTMLElement>('header h2')
+    if (!title) throw new Error('Missing BookViewer title')
+
+    return {
+      header: bounds('header'),
+      title: { ...bounds('header h2'), scrollWidth: title.scrollWidth },
+      creator: bounds('[data-testid="creator-link"]'),
+      close: bounds('[data-testid="close"]'),
+    }
+  })
+
+  expect(mobileHeader.header.left).toBeGreaterThanOrEqual(0)
+  expect(mobileHeader.header.right).toBeLessThanOrEqual(320)
+  expect(mobileHeader.title.right).toBeLessThanOrEqual(mobileHeader.creator.left)
+  expect(mobileHeader.creator.right).toBeLessThanOrEqual(mobileHeader.close.left)
+  expect(mobileHeader.title.scrollWidth).toBeGreaterThan(mobileHeader.title.width)
+  await expect(creatorLink).toHaveText('認識創作者 ↗')
+})
+
 test('shelf 與 info 事件開啟對應面板', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })

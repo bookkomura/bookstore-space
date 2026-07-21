@@ -29,15 +29,35 @@ describe('BookViewer', () => {
     expect(w.get('[data-testid="next"]').attributes('disabled')).toBeDefined()
   })
 
-  it('最後一頁才顯示創作者連結', async () => {
+  it('每一頁顯示同一個創作者連結，最後一頁只切換強調狀態', async () => {
     const w = mount(BookViewer, { props: { showcase } })
-    expect(w.find('[data-testid="creator-link"]').exists()).toBe(false)
+    const firstPageLink = w.get('[data-testid="creator-link"]')
+
+    expect(firstPageLink.text()).toBe('認識創作者 ↗')
+    expect(firstPageLink.attributes()).toMatchObject({
+      href: 'https://instagram.com/creator',
+      target: '_blank',
+      rel: 'noopener',
+      'aria-label': '認識創作者（在新分頁開啟）',
+    })
+    expect(firstPageLink.classes()).not.toContain('creator--emphasized')
+
     await w.get('[data-testid="next"]').trigger('click')
-    expect(w.get('[data-testid="creator-link"]').attributes('href')).toBe('https://instagram.com/creator')
+
+    const lastPageLink = w.get('[data-testid="creator-link"]')
+    expect(lastPageLink.element).toBe(firstPageLink.element)
+    expect(lastPageLink.classes()).toContain('creator--emphasized')
+
+    await w.get('[data-testid="prev"]').trigger('click')
+    expect(w.get('[data-testid="creator-link"]').classes()).not.toContain('creator--emphasized')
   })
 
-  it('無 creatorLink 時最後一頁不渲染連結', async () => {
-    const w = mount(BookViewer, { props: { showcase: { ...showcase, creatorLink: undefined } } })
+  it('無 creatorLink 時所有頁面都不渲染創作者連結', async () => {
+    const w = mount(BookViewer, {
+      props: { showcase: { ...showcase, creatorLink: undefined } },
+    })
+
+    expect(w.find('[data-testid="creator-link"]').exists()).toBe(false)
     await w.get('[data-testid="next"]').trigger('click')
     expect(w.find('[data-testid="creator-link"]').exists()).toBe(false)
   })
