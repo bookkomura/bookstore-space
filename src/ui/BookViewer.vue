@@ -54,6 +54,16 @@ function onTouchEnd(event: TouchEvent) {
   <div class="overlay" data-testid="book-viewer" @touchstart="onTouchStart" @touchend="onTouchEnd">
     <header>
       <h2>{{ showcase.title }}</h2>
+      <a
+        v-if="showcase.creatorLink"
+        data-testid="creator-link"
+        class="creator"
+        :class="{ 'creator--emphasized': isLast }"
+        :href="showcase.creatorLink"
+        target="_blank"
+        rel="noopener"
+        aria-label="認識創作者（在新分頁開啟）"
+      >認識創作者 <span aria-hidden="true">↗</span></a>
       <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
     </header>
 
@@ -78,14 +88,6 @@ function onTouchEnd(event: TouchEvent) {
       <button data-testid="next" :disabled="isLast" @click="next">下一頁</button>
     </footer>
 
-    <a
-      v-if="isLast && showcase.creatorLink"
-      data-testid="creator-link"
-      class="creator"
-      :href="showcase.creatorLink"
-      target="_blank"
-      rel="noopener"
-    >創作者 IG →</a>
   </div>
 </template>
 
@@ -102,18 +104,27 @@ function onTouchEnd(event: TouchEvent) {
 }
 
 header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.5rem 44px;
+  gap: 12px;
   align-items: center;
-  justify-content: space-between;
 }
 
 header h2 {
+  grid-column: 1;
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   font-size: 1.2rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 header button {
-  padding: 8px;
+  grid-column: 3;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   color: inherit;
   font-size: 1.5rem;
   background: none;
@@ -171,8 +182,55 @@ footer button:disabled {
 }
 
 .creator {
-  padding-bottom: 8px;
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8.5rem;
+  height: 44px;
+  padding: 0 12px;
+  box-sizing: border-box;
   color: #f0b860;
-  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid #f0b860;
+  border-radius: 999px;
+  transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.creator--emphasized {
+  color: #21170a;
+  background: #f0b860;
+  box-shadow: 0 0 0 4px rgba(240, 184, 96, 0.18);
+}
+
+.creator:focus-visible {
+  outline: 3px solid #fff4d6;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .creator--emphasized {
+    animation: creator-emphasis 240ms ease-out both;
+  }
+
+  @keyframes creator-emphasis {
+    from {
+      opacity: 0.72;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    gap: 8px;
+  }
 }
 </style>
