@@ -12,13 +12,28 @@ vi.mock('phaser', () => ({
         DESTROY: 'destroy',
       },
     },
+    Geom: {
+      Rectangle: Object.assign(
+        class Rectangle {
+          constructor(
+            _x: number,
+            _y: number,
+            _width: number,
+            _height: number,
+          ) {}
+        },
+        { Contains: vi.fn() },
+      ),
+    },
   },
 }))
 
 import { StoreScene } from '../src/game/StoreScene'
+import { buildInteractionZones } from '../src/game/sceneLayout'
 
 function chain() {
   const value = {
+    destroy: vi.fn(),
     on: vi.fn(),
     setCollideWorldBounds: vi.fn(),
     setDepth: vi.fn(),
@@ -27,6 +42,8 @@ function chain() {
     setOrigin: vi.fn(),
     setPosition: vi.fn(),
     setScale: vi.fn(),
+    setSize: vi.fn(),
+    setStrokeStyle: vi.fn(),
     setVelocity: vi.fn(),
     setVisible: vi.fn(),
   }
@@ -34,7 +51,7 @@ function chain() {
   return value
 }
 
-function createSceneFixture() {
+function createSceneFixture(scene = new StoreScene({}, [])) {
   const player = chain()
   const body = {
     center: { x: 0, y: 0 },
@@ -56,9 +73,11 @@ function createSceneFixture() {
     right: { isDown: false },
     up: { isDown: false },
   }
-  const scene = new StoreScene() as any
-  Object.assign(scene, {
+  const sceneFixture = scene as any
+  Object.assign(sceneFixture, {
     add: {
+      circle: vi.fn(() => chain()),
+      container: vi.fn(() => chain()),
       image: vi.fn(() => chain()),
       rectangle: vi.fn(() => rectangle),
       text: vi.fn(() => hint),
@@ -99,7 +118,7 @@ function createSceneFixture() {
     },
   })
 
-  return { cursors, player, playerAnimations, scene }
+  return { cursors, player, playerAnimations, scene: sceneFixture }
 }
 
 describe('StoreScene', () => {
@@ -145,5 +164,20 @@ describe('StoreScene', () => {
     } finally {
       scene.removeListeners()
     }
+  })
+
+  it('以注入的互動區建立標記與 proximity 判定', () => {
+    const zones = buildInteractionZones([{ id: 'dynamic-showcase' }])
+    const { scene } = createSceneFixture(
+      new StoreScene({
+        'dynamic-showcase': '動態展示',
+        'shelf-1': '店主精選',
+        'info-1': '營業資訊',
+      }, zones),
+    )
+
+    scene.create()
+
+    expect(scene.markers.has('dynamic-showcase')).toBe(true)
   })
 })

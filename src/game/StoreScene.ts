@@ -14,7 +14,6 @@ import {
 } from './playerAnimation'
 import {
   COLLISION_RECTS,
-  INTERACTION_ZONES,
   PLAYER_SPAWN,
   WORLD_SIZE,
 } from './sceneLayout'
@@ -33,7 +32,10 @@ export class StoreScene extends Phaser.Scene {
   private facing: Facing = 'down'
   private bridgeUnsubscribers: (() => void)[] = []
 
-  constructor(private readonly labels?: InteractionLabels) {
+  constructor(
+    private readonly labels: InteractionLabels,
+    private readonly interactionZones: readonly Zone[],
+  ) {
     super('store')
   }
 
@@ -80,23 +82,21 @@ export class StoreScene extends Phaser.Scene {
     this.resizeCamera()
     this.scale.on('resize', this.resizeCamera, this)
 
-    if (this.labels) {
-      for (const zone of INTERACTION_ZONES) {
-        const label = this.labels[zone.id]
-        if (!label) throw new Error(`互動點 ${zone.id} 缺少顯示名稱`)
-        this.markers.set(
-          zone.id,
-          new InteractionMarker(
-            this,
-            zone.anchorX,
-            zone.anchorY,
-            label,
-            () => {
-              if (this.currentZone?.id === zone.id) this.triggerInteract()
-            },
-          ),
-        )
-      }
+    for (const zone of this.interactionZones) {
+      const label = this.labels[zone.id]
+      if (!label) throw new Error(`互動點 ${zone.id} 缺少顯示名稱`)
+      this.markers.set(
+        zone.id,
+        new InteractionMarker(
+          this,
+          zone.anchorX,
+          zone.anchorY,
+          label,
+          () => {
+            if (this.currentZone?.id === zone.id) this.triggerInteract()
+          },
+        ),
+      )
     }
 
     this.cursors = this.input.keyboard!.createCursorKeys()
@@ -191,7 +191,7 @@ export class StoreScene extends Phaser.Scene {
     const zone = findNearestZone(
       body.center.x,
       body.center.y,
-      INTERACTION_ZONES,
+      this.interactionZones,
     )
 
     if (zone?.id === this.currentZone?.id) return

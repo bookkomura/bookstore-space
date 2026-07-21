@@ -5,6 +5,7 @@ import { loadContent } from './content/loadContent'
 import type { ContentBundle, Shelf, Showcase } from './content/schema'
 import { createGame } from './game/createGame'
 import { buildInteractionLabels } from './game/interactionLabels'
+import { buildInteractionZones } from './game/sceneLayout'
 import BookViewer from './ui/BookViewer.vue'
 import ShelfPanel from './ui/ShelfPanel.vue'
 import StoreInfoCard from './ui/StoreInfoCard.vue'
@@ -70,6 +71,7 @@ onMounted(async () => {
   game = createGame(
     container.value,
     buildInteractionLabels(content.value),
+    buildInteractionZones(content.value.showcases),
   )
 })
 
