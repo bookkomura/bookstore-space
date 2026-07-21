@@ -64,5 +64,17 @@
     "hours": "週三至週日 11:00–19:00",
     "instagram": "https://instagram.com/example_bookstore",
     "mapLink": "https://maps.google.com/?q=台東市中山路123號"
-  }
+  },
+  "newsletters": [
+    {
+      "sentAt": "2026-07-19T05:40:00.000Z",
+      "subject": "小村碎碎念～總是會到",
+      "blocks": [
+        { "type": "paragraph", "text": "總是會到。" },
+        { "type": "image", "image": "https://a.storyblok.com/f/1.jpg", "alt": "市集", "caption": "夏日市集" },
+        { "type": "link", "label": "報名活動", "href": "https://forms.gle/example" },
+        { "type": "divider" }
+      ]
+    }
+  ]
 }

@@ -1,8 +1,27 @@
 import { describe, it, expect } from 'vitest'
-import { ContentBundleSchema } from '../src/content/schema'
+import { ContentBundleSchema, NewsletterSchema } from '../src/content/schema'
 import sample from '../scripts/sample-content.json'
 
 describe('ContentBundleSchema', () => {
+  it('accepts safe newsletter blocks and rejects HTTP links', () => {
+    const issue = {
+      sentAt: '2026-07-19T05:40:00.000Z',
+      subject: '小村碎碎念～總是會到',
+      blocks: [
+        { type: 'paragraph', text: '總是會到。' },
+        { type: 'image', image: 'https://a.storyblok.com/f/1.jpg', alt: '市集', caption: '夏日市集' },
+        { type: 'link', label: '報名活動', href: 'https://forms.gle/example' },
+        { type: 'divider' },
+      ],
+    }
+
+    expect(NewsletterSchema.safeParse(issue).success).toBe(true)
+    expect(NewsletterSchema.safeParse({
+      ...issue,
+      blocks: [{ type: 'link', label: 'x', href: 'http://bad.test' }],
+    }).success).toBe(false)
+  })
+
   it('接受合法的 sample content', () => {
     expect(() => ContentBundleSchema.parse(sample)).not.toThrow()
   })

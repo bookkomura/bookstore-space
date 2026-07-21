@@ -87,6 +87,44 @@ export function mapStoriesToBundle(rawStories: unknown[]): ContentBundle {
       }
     })
 
+  const newsletters = stories
+    .filter((story) => story.content.component === 'newsletter')
+    .map((story) => {
+      const blocks = readArray(story.content.blocks, `newsletter ${story.slug} 的 blocks`)
+
+      return {
+        sentAt: story.content.sent_at,
+        subject: story.content.subject,
+        blocks: blocks.map((block, index) => {
+          const item = readRecord(block, `newsletter ${story.slug} 的 blocks[${index}]`)
+
+          switch (item.component) {
+            case 'newsletter_paragraph':
+              return { type: 'paragraph' as const, text: item.text }
+            case 'newsletter_image':
+              return {
+                type: 'image' as const,
+                image: assetFilename(item.image, `newsletter ${story.slug} 的 blocks[${index}].image`),
+                alt: item.alt,
+                ...(typeof item.caption === 'string' ? { caption: item.caption } : {}),
+              }
+            case 'newsletter_link':
+              return {
+                type: 'link' as const,
+                label: item.label,
+                href: optionalUrl(item.href) ?? '',
+              }
+            case 'newsletter_divider':
+              return { type: 'divider' as const }
+            default:
+              return { type: item.component }
+          }
+        }),
+      }
+    })
+
+  newsletters.sort((a, b) => Date.parse(b.sentAt) - Date.parse(a.sentAt))
+
   const infoStory = stories.find((story) => story.content.component === 'store_info')
   if (!infoStory) throw new Error('CMS 缺少 store_info（實體店資訊）')
 
@@ -100,6 +138,7 @@ export function mapStoriesToBundle(rawStories: unknown[]): ContentBundle {
       instagram: optionalUrl(content.instagram) ?? '',
       mapLink: optionalUrl(content.map_link) ?? '',
     },
+    newsletters,
   })
 
   if (!result.success) invalidContent('映射後的內容未通過驗證')

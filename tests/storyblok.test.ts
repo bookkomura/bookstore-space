@@ -33,7 +33,44 @@ const stories = [
   },
 ]
 
+const olderNewsletter = {
+  slug: 'newsletter-old',
+  content: {
+    component: 'newsletter',
+    sent_at: '2026-07-18T05:40:00.000Z',
+    subject: '小村碎碎念～舊一期',
+    blocks: [
+      { component: 'newsletter_paragraph', text: '舊一期內容。' },
+    ],
+  },
+}
+
+const newerNewsletter = {
+  slug: 'newsletter-new',
+  content: {
+    component: 'newsletter',
+    sent_at: '2026-07-19T05:40:00.000Z',
+    subject: '小村碎碎念～最新一期',
+    blocks: [
+      { component: 'newsletter_paragraph', text: '最新一期內容。' },
+      { component: 'newsletter_image', image: { filename: 'https://a.storyblok.com/f/2.jpg' }, alt: '市集' },
+      { component: 'newsletter_link', label: '報名活動', href: { url: 'https://forms.gle/example' } },
+      { component: 'newsletter_divider' },
+    ],
+  },
+}
+
 describe('mapStoriesToBundle', () => {
+  it('maps newsletter stories in descending sentAt order without sourceMessageId', () => {
+    const bundle = mapStoriesToBundle([...stories, olderNewsletter, newerNewsletter])
+
+    expect(bundle.newsletters.map((item) => item.subject)).toEqual([
+      '小村碎碎念～最新一期',
+      '小村碎碎念～舊一期',
+    ])
+    expect(bundle.newsletters[0]).not.toHaveProperty('sourceMessageId')
+  })
+
   it('把三種 component 映射成 ContentBundle', () => {
     const bundle = mapStoriesToBundle(stories)
     expect(bundle.showcases[0]).toEqual({
