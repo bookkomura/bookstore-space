@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildInteractionZones,
   COLLISION_RECTS,
   INTERACTION_ZONES,
+  MAX_SHOWCASE_SLOTS,
   PLAYER_SPAWN,
+  SHOWCASE_SLOT_ANCHORS,
   WORLD_SIZE,
 } from '../src/game/sceneLayout'
 
@@ -22,6 +25,29 @@ describe('sceneLayout', () => {
       'shelf-1',
       'info-1',
     ])
+  })
+
+  it('由右至左為三筆 Showcase 建立置中的書櫃互動點', () => {
+    const zones = buildInteractionZones([
+      { id: 'first' }, { id: 'second' }, { id: 'third' },
+    ])
+    expect(zones.filter((zone) => zone.type === 'showcase')).toEqual([
+      { id: 'first', type: 'showcase', x: 1021, y: 270, width: 72, height: 64, anchorX: 1057, anchorY: 163 },
+      { id: 'second', type: 'showcase', x: 945, y: 270, width: 72, height: 64, anchorX: 981, anchorY: 163 },
+      { id: 'third', type: 'showcase', x: 869, y: 270, width: 72, height: 64, anchorX: 905, anchorY: 163 },
+    ])
+  })
+
+  it('沒有 Showcase 時不建立 Showcase 互動點', () => {
+    expect(buildInteractionZones([]).filter((zone) => zone.type === 'showcase')).toEqual([])
+  })
+
+  it('十個 Showcase 一一使用十個書櫃中心點', () => {
+    const zones = buildInteractionZones(
+      Array.from({ length: MAX_SHOWCASE_SLOTS }, (_, index) => ({ id: `item-${index}` })),
+    ).filter((zone) => zone.type === 'showcase')
+    expect(zones.map((zone) => zone.anchorX)).toEqual(SHOWCASE_SLOT_ANCHORS)
+    expect(zones.every((zone) => zone.anchorY === 163)).toBe(true)
   })
 
   it('商品 1 在最右側，向左依序至商品 5', () => {

@@ -34,32 +34,14 @@ export const COLLISION_RECTS: readonly CollisionRect[] = [
   { id: 'npc-right', x: 1228, y: 401, width: 68, height: 137 },
 ] as const
 
-export const INTERACTION_ZONES: readonly Zone[] = [
-  {
-    id: 'showcase-1', type: 'showcase',
-    x: 1025, y: 270, width: 72, height: 64,
-    anchorX: 1057, anchorY: 163,
-  },
-  {
-    id: 'showcase-2', type: 'showcase',
-    x: 945, y: 270, width: 72, height: 64,
-    anchorX: 981, anchorY: 163,
-  },
-  {
-    id: 'showcase-3', type: 'showcase',
-    x: 865, y: 270, width: 72, height: 64,
-    anchorX: 905, anchorY: 163,
-  },
-  {
-    id: 'showcase-4', type: 'showcase',
-    x: 785, y: 270, width: 72, height: 64,
-    anchorX: 828, anchorY: 163,
-  },
-  {
-    id: 'showcase-5', type: 'showcase',
-    x: 705, y: 270, width: 72, height: 64,
-    anchorX: 746, anchorY: 163,
-  },
+export const MAX_SHOWCASE_SLOTS = 10
+export const SHOWCASE_SLOT_ANCHORS = [
+  1057, 981, 905, 828, 746, 668, 590, 512, 434, 356,
+] as const
+
+type ShowcaseReference = Readonly<{ id: string }>
+
+export const STATIC_INTERACTION_ZONES: readonly Zone[] = [
   {
     id: 'shelf-1', type: 'shelf',
     x: 1020, y: 360, width: 170, height: 160,
@@ -71,3 +53,33 @@ export const INTERACTION_ZONES: readonly Zone[] = [
     anchorX: 1324, anchorY: 300,
   },
 ] as const
+
+export function buildInteractionZones(
+  showcases: readonly ShowcaseReference[],
+): readonly Zone[] {
+  if (showcases.length > MAX_SHOWCASE_SLOTS) {
+    throw new RangeError(`Showcase 最多只能設定 ${MAX_SHOWCASE_SLOTS} 筆`)
+  }
+
+  return [
+    ...showcases.map((showcase, index) => ({
+      id: showcase.id,
+      type: 'showcase' as const,
+      x: SHOWCASE_SLOT_ANCHORS[index] - 36,
+      y: 270,
+      width: 72,
+      height: 64,
+      anchorX: SHOWCASE_SLOT_ANCHORS[index],
+      anchorY: 163,
+    })),
+    ...STATIC_INTERACTION_ZONES,
+  ]
+}
+
+export const INTERACTION_ZONES = buildInteractionZones([
+  { id: 'showcase-1' },
+  { id: 'showcase-2' },
+  { id: 'showcase-3' },
+  { id: 'showcase-4' },
+  { id: 'showcase-5' },
+])
