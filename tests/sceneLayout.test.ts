@@ -31,6 +31,19 @@ describe('sceneLayout', () => {
     expect(xs).toEqual([...xs].sort((a, b) => b - a))
   })
 
+  it('將店主精選放在長桌右側、紫衣客人旁', () => {
+    expect(INTERACTION_ZONES.find((zone) => zone.id === 'shelf-1')).toEqual({
+      id: 'shelf-1',
+      type: 'shelf',
+      x: 1020,
+      y: 360,
+      width: 170,
+      height: 160,
+      anchorX: 950,
+      anchorY: 412,
+    })
+  })
+
   it('碰撞體 ID 唯一且完全位於世界內', () => {
     expect(new Set(COLLISION_RECTS.map((rect) => rect.id)).size).toBe(COLLISION_RECTS.length)
     for (const rect of COLLISION_RECTS) {

@@ -97,7 +97,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
       path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-5-proximity.png',
     })
 
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     const viewer = page.getByTestId('book-viewer')
     await expect(viewer).toBeVisible()
     await expect(viewer).toContainText('獨立刊物選集')
@@ -120,7 +120,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await expect(viewer).not.toBeVisible()
 
     await walkUntilZone(page, 'ArrowRight', 'showcase-4')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(viewer).toContainText('植物染布品')
     await page.screenshot({
       path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-4-overlay.png',
@@ -128,7 +128,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.getByTestId('close').click()
 
     await walkUntilZone(page, 'ArrowRight', 'showcase-3')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(viewer).toContainText('手作陶器')
     await page.screenshot({
       path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-3-overlay.png',
@@ -136,7 +136,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.getByTestId('close').click()
 
     await walkUntilZone(page, 'ArrowRight', 'showcase-2')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(viewer).toContainText('插畫明信片')
     await page.screenshot({
       path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-2-overlay.png',
@@ -144,35 +144,27 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.getByTestId('close').click()
 
     await walkUntilZone(page, 'ArrowRight', 'showcase-1')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(viewer).toContainText('手工蠟燭系列')
     await page.screenshot({
       path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-1-overlay.png',
     })
     await page.getByTestId('close').click()
 
-    await page.keyboard.down('ArrowDown')
-    await page.waitForTimeout(3_000)
-    await page.keyboard.up('ArrowDown')
-    await walkUntilZone(page, 'ArrowLeft', 'shelf-1')
+    await walkUntilZone(page, 'ArrowDown', 'shelf-1')
     const shelf = page.getByTestId('shelf-panel')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(shelf).toBeVisible()
     await expect(shelf).toContainText('店主精選')
     await page.screenshot({
       path: '/private/tmp/bookstore-task20-evidence/desktop-shelf-1-overlay.png',
     })
-    await page.getByTestId('close').click()
+    await page.keyboard.press('Escape')
+    await expect(shelf).not.toBeVisible()
 
-    await page.keyboard.down('ArrowRight')
-    await page.waitForTimeout(1_000)
-    await page.keyboard.up('ArrowRight')
-    await page.keyboard.down('ArrowUp')
-    await page.waitForTimeout(2_000)
-    await page.keyboard.up('ArrowUp')
     await walkUntilZone(page, 'ArrowRight', 'info-1')
     const info = page.getByTestId('store-info')
-    await page.keyboard.press('e')
+    await page.keyboard.press('Space')
     await expect(info).toBeVisible()
     await expect(info).toContainText('來實體店逛逛')
     await page.screenshot({

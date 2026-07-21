@@ -100,7 +100,7 @@ export class StoreScene extends Phaser.Scene {
     }
 
     this.cursors = this.input.keyboard!.createCursorKeys()
-    this.input.keyboard!.on('keydown-E', this.triggerInteract, this)
+    this.input.keyboard!.on('keydown-SPACE', this.triggerInteract, this)
     this.bridgeUnsubscribers = [
       bridge.on('ui:opened', () => {
         this.uiOpen = true
@@ -130,7 +130,7 @@ export class StoreScene extends Phaser.Scene {
     this.bridgeUnsubscribers.forEach((unsubscribe) => unsubscribe())
     this.bridgeUnsubscribers = []
     this.scale.off('resize', this.resizeCamera, this)
-    this.input.keyboard?.off('keydown-E', this.triggerInteract, this)
+    this.input.keyboard?.off('keydown-SPACE', this.triggerInteract, this)
     for (const marker of this.markers.values()) marker.destroy()
     this.markers.clear()
     touchInput.x = 0

@@ -89,6 +89,22 @@ describe('App', () => {
     offClosed()
   })
 
+  it('closes an opened interaction overlay when Escape is pressed', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const closed = vi.fn()
+    const offClosed = bridge.on('ui:closed', closed)
+    const wrapper = await mountApp()
+    bridge.emit('interact', { id: 'showcase-1', type: 'showcase' })
+    await flushPromises()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="book-viewer"]').exists()).toBe(false)
+    expect(closed).toHaveBeenCalledOnce()
+    offClosed()
+  })
+
   it('renders the zh-TW load error and does not start Phaser when loading fails', async () => {
     mocks.loadContent.mockRejectedValue(new Error('network unavailable'))
     const wrapper = await mountApp()

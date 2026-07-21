@@ -62,8 +62,8 @@ export const INTERACTION_ZONES: readonly Zone[] = [
   },
   {
     id: 'shelf-1', type: 'shelf',
-    x: 574, y: 271, width: 200, height: 63,
-    anchorX: 674, anchorY: 352,
+    x: 1020, y: 360, width: 170, height: 160,
+    anchorX: 950, anchorY: 412,
   },
   {
     id: 'info-1', type: 'info',

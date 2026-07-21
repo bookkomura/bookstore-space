@@ -43,6 +43,10 @@ function openInteraction({ id, type }: BridgeEvents['interact']) {
   if (uiOpen.value) bridge.emit('ui:opened')
 }
 
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && uiOpen.value) closeAll()
+}
+
 onMounted(async () => {
   try {
     content.value = await loadContent()
@@ -53,6 +57,7 @@ onMounted(async () => {
   }
 
   if (isUnmounted || !container.value) return
+  window.addEventListener('keydown', handleKeydown)
   bridgeUnsubscribers = [
     bridge.on('interact', openInteraction),
     bridge.on('zone:enter', (zone) => {
@@ -70,6 +75,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   isUnmounted = true
+  window.removeEventListener('keydown', handleKeydown)
   bridgeUnsubscribers.forEach((unsubscribe) => unsubscribe())
   bridgeUnsubscribers = []
   game?.destroy(true)

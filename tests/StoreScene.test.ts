@@ -103,6 +103,30 @@ function createSceneFixture() {
 }
 
 describe('StoreScene', () => {
+  it('uses the space bar as the desktop interaction key', () => {
+    const { scene } = createSceneFixture()
+
+    scene.create()
+
+    expect(scene.input.keyboard.on).toHaveBeenCalledWith(
+      'keydown-SPACE',
+      scene.triggerInteract,
+      scene,
+    )
+    expect(scene.input.keyboard.on).not.toHaveBeenCalledWith(
+      'keydown-E',
+      scene.triggerInteract,
+      scene,
+    )
+
+    scene.removeListeners()
+    expect(scene.input.keyboard.off).toHaveBeenCalledWith(
+      'keydown-SPACE',
+      scene.triggerInteract,
+      scene,
+    )
+  })
+
   it('immediately stops a moving visitor when an overlay opens', () => {
     const { cursors, player, playerAnimations, scene } = createSceneFixture()
     scene.create()
