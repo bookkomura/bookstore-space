@@ -65,6 +65,9 @@ describe('App', () => {
         'shelf-1': '店主精選',
         'info-1': '營業資訊',
       }),
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'showcase-1', type: 'showcase' }),
+      ]),
     )
     bridge.emit('interact', { id: 'showcase-1', type: 'showcase' })
     await flushPromises()
@@ -138,5 +141,18 @@ describe('App', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="book-viewer"]').exists()).toBe(false)
+  })
+
+  it('只把已設定 Showcase 的互動區傳給 Phaser', async () => {
+    mocks.loadContent.mockResolvedValue({ ...content, showcases: [] })
+    await mountApp()
+
+    expect(mocks.createGame).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.any(Object),
+      expect.not.arrayContaining([
+        expect.objectContaining({ type: 'showcase' }),
+      ]),
+    )
   })
 })

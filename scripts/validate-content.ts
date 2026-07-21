@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { ContentBundleSchema } from '../src/content/schema'
 import { validateContent } from '../src/content/validate'
-import { INTERACTION_ZONES } from '../src/game/sceneLayout'
+import { buildInteractionZones } from '../src/game/sceneLayout'
 
 const raw = JSON.parse(readFileSync('public/content.json', 'utf8'))
 const parsed = ContentBundleSchema.safeParse(raw)
@@ -14,7 +14,10 @@ if (!parsed.success) {
   process.exit(1)
 }
 
-const errors = validateContent(INTERACTION_ZONES, parsed.data)
+const errors = validateContent(
+  buildInteractionZones(parsed.data.showcases),
+  parsed.data,
+)
 if (errors.length > 0) {
   console.error('✗ 內容驗證失敗：')
   for (const error of errors) console.error(`  - ${error}`)

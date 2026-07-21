@@ -109,9 +109,9 @@ import {
 } from '../src/game/sceneLayout'
 
 describe('sceneLayout', () => {
-  it('使用核准背景尺寸與左上入口出生點', () => {
+  it('使用核准背景尺寸與右側入口出生點', () => {
     expect(WORLD_SIZE).toEqual({ width: 1572, height: 1001 })
-    expect(PLAYER_SPAWN).toEqual({ x: 270, y: 300 })
+    expect(PLAYER_SPAWN).toEqual({ x: 1205, y: 250 })
   })
 
   it('定義五商品、店長選書與營業資訊共七區', () => {
@@ -282,7 +282,7 @@ export interface CollisionRect {
 }
 
 export const WORLD_SIZE = { width: 1572, height: 1001 } as const
-export const PLAYER_SPAWN: Point = { x: 270, y: 300 }
+export const PLAYER_SPAWN: Point = { x: 1205, y: 250 }
 
 export const COLLISION_RECTS: readonly CollisionRect[] = [
   { id: 'wall-top', x: 40, y: 17, width: 1492, height: 40 },
@@ -1137,7 +1137,7 @@ Expected: 全部 exit 0；build 不再產生 tilemap／placeholder。
 啟動 `npm run dev` 後，在桌機與 390×844 viewport 檢查：
 
 ```text
-背景為核准書店圖片；出生點在左上入口；鏡頭不露出世界外；
+背景為核准書店圖片；出生點在右側入口；鏡頭不露出世界外；
 角色可沿通道移動；牆壁、中央桌、下方桌椅、左右書櫃、櫃檯與靜態 NPC 均不可穿越；
 resize／旋轉不重置玩家位置。
 ```

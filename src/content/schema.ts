@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_SHOWCASE_SLOTS } from '../game/sceneLayout'
 
 export const PageSchema = z.object({
   image: z.string().url(),
@@ -32,7 +33,7 @@ export const StoreInfoSchema = z.object({
 })
 
 export const ContentBundleSchema = z.object({
-  showcases: z.array(ShowcaseSchema),
+  showcases: z.array(ShowcaseSchema).max(MAX_SHOWCASE_SLOTS),
   shelves: z.array(ShelfSchema),
   storeInfo: StoreInfoSchema,
 })

@@ -19,6 +19,19 @@ describe('ContentBundleSchema', () => {
     expect(() => ContentBundleSchema.parse(ok)).not.toThrow()
   })
 
+  it('接受零到十筆 Showcase，但拒絕第十一筆', () => {
+    const empty = { ...sample, showcases: [] }
+    expect(ContentBundleSchema.safeParse(empty).success).toBe(true)
+
+    const eleven = {
+      ...sample,
+      showcases: Array.from({ length: 11 }, (_, index) => ({
+        ...sample.showcases[0], id: `showcase-${index}`,
+      })),
+    }
+    expect(ContentBundleSchema.safeParse(eleven).success).toBe(false)
+  })
+
   it('拒絕缺 storeInfo 的 bundle', () => {
     const bad = structuredClone(sample) as any
     delete bad.storeInfo
