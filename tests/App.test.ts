@@ -29,7 +29,11 @@ const content: ContentBundle = {
     instagram: 'https://instagram.com/store',
     mapLink: 'https://maps.google.com/?q=store',
   },
-  newsletters: [],
+  newsletters: [{
+    sentAt: '2026-07-19T05:40:00.000Z',
+    subject: '小村碎碎念～總是會到',
+    blocks: [{ type: 'paragraph', text: '總是會到。' }],
+  }],
 }
 
 const wrappers: VueWrapper[] = []
@@ -90,6 +94,28 @@ describe('App', () => {
 
     expect(wrapper.find('[data-testid="shelf-panel"]').exists()).toBe(false)
     expect(closed).toHaveBeenCalledOnce()
+    offClosed()
+  })
+
+  it('opens archive-1 and releases the scene on close', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const opened = vi.fn()
+    const closed = vi.fn()
+    const offOpened = bridge.on('ui:opened', opened)
+    const offClosed = bridge.on('ui:closed', closed)
+    const wrapper = await mountApp()
+
+    bridge.emit('interact', { id: 'archive-1', type: 'archive' })
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="newsletter-archive"]').text()).toContain('總是會到')
+    expect(opened).toHaveBeenCalledOnce()
+
+    await wrapper.get('[data-testid="newsletter-archive"] [data-testid="close"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="newsletter-archive"]').exists()).toBe(false)
+    expect(closed).toHaveBeenCalledOnce()
+    offOpened()
     offClosed()
   })
 

@@ -7,6 +7,7 @@ import { createGame } from './game/createGame'
 import { buildInteractionLabels } from './game/interactionLabels'
 import { buildInteractionZones } from './game/sceneLayout'
 import BookViewer from './ui/BookViewer.vue'
+import NewsletterArchive from './ui/NewsletterArchive.vue'
 import ShelfPanel from './ui/ShelfPanel.vue'
 import StoreInfoCard from './ui/StoreInfoCard.vue'
 import TouchControls from './ui/TouchControls.vue'
@@ -17,10 +18,11 @@ const loadError = ref(false)
 const activeShowcase = ref<Showcase | null>(null)
 const activeShelf = ref<Shelf | null>(null)
 const showInfo = ref(false)
+const showArchive = ref(false)
 const currentZone = ref<BridgeEvents['zone:enter'] | null>(null)
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const uiOpen = computed(
-  () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value),
+  () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value || showArchive.value),
 )
 
 let game: ReturnType<typeof createGame> | null = null
@@ -39,6 +41,8 @@ function openInteraction({ id, type }: BridgeEvents['interact']) {
       currentContent.shelves.find((shelf) => shelf.id === id) ?? null
   } else if (type === 'info') {
     showInfo.value = true
+  } else if (type === 'archive') {
+    showArchive.value = true
   }
 
   if (uiOpen.value) bridge.emit('ui:opened')
@@ -91,6 +95,7 @@ function closeAll() {
   activeShowcase.value = null
   activeShelf.value = null
   showInfo.value = false
+  showArchive.value = false
   bridge.emit('ui:closed')
 }
 </script>
@@ -110,6 +115,11 @@ function closeAll() {
     <BookViewer v-if="activeShowcase" :showcase="activeShowcase" @close="closeAll" />
     <ShelfPanel v-if="activeShelf" :shelf="activeShelf" @close="closeAll" />
     <StoreInfoCard v-if="showInfo && content" :info="content.storeInfo" @close="closeAll" />
+    <NewsletterArchive
+      v-if="showArchive && content"
+      :newsletters="content.newsletters"
+      @close="closeAll"
+    />
   </template>
 </template>
 

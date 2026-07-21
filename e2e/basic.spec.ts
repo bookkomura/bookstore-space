@@ -111,6 +111,40 @@ test('shelf 與 info 事件開啟對應面板', async ({ page }) => {
   await expect(page.getByTestId('store-info')).toBeVisible()
 })
 
+test('檔案室固定期刊列並在桌機與手機捲動內容', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'desktop browser verifies the required wheel gesture at a mobile viewport')
+  await page.goto('/')
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
+
+  await page.evaluate(() => {
+    window.__bridge.emit('interact', { id: 'archive-1', type: 'archive' })
+  })
+
+  const archive = page.getByTestId('newsletter-archive')
+  const navigation = archive.locator('.issue-nav')
+  const content = page.getByTestId('newsletter-content')
+  await expect(archive).toBeVisible()
+
+  // The sample issue is deliberately concise; test scroll containment with
+  // overflow local to the actual newsletter paper rather than altering it.
+  await content.evaluate((element) => {
+    element.style.paddingBottom = '1200px'
+  })
+  const navigationTop = await navigation.evaluate((element) => element.getBoundingClientRect().top)
+  const documentTop = await page.evaluate(() => window.scrollY)
+  await content.evaluate((element) => element.scrollBy({ top: 240, behavior: 'instant' }))
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  expect(await navigation.evaluate((element) => element.getBoundingClientRect().top)).toBe(navigationTop)
+  expect(await page.evaluate(() => window.scrollY)).toBe(documentTop)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await content.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }))
+  await content.hover()
+  await page.mouse.wheel(0, 360)
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  expect(await page.evaluate(() => window.scrollY)).toBe(documentTop)
+})
+
 async function waitForZone(page: Page, id: string) {
   await expect.poll(
     () => page.evaluate((zoneId) => window.__observedZoneIds?.includes(zoneId), id),

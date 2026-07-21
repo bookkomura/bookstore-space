@@ -28,6 +28,7 @@ Component 名稱與欄位（story slug = 地圖互動點 id）：
 - `showcase`：title (Text)、pages (Blocks：image (Asset)、caption (Textarea))、creator_link (Link，選填)
 - `shelf`：title (Text)、books (Blocks：cover (Asset)、title (Text)、note (Textarea))
 - `store_info`（單一 story，slug 任意）：address、hours (Text)、instagram、map_link (Link)
+- `newsletter`：[電子報 CMS contract](docs/storyblok/newsletter-component.md)。只有已發布的電子報 story 會在下一次 build 後出現在檔案室；本機未設定 `STORYBLOK_TOKEN` 時使用 sample fixture。
 
 ## 圖片場景資產
 
