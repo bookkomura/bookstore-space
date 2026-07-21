@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- The visible link copy is exactly `認識創作者 ↗`.
+- The visible link copy is exactly `認識創作者`.
 - The anchor appears on every page when `showcase.creatorLink` exists and never appears when it is absent.
 - The ordinary and last-page states have identical width, height, padding, border width, and grid position.
 - The last page may run one short fade but must not animate continuously; `prefers-reduced-motion: reduce` must result in no emphasis animation.
@@ -34,7 +34,7 @@
 
 **Interfaces:**
 - Consumes: `Showcase.creatorLink?: string` and the existing `isLast: ComputedRef<boolean>` inside `BookViewer`.
-- Produces: one `[data-testid="creator-link"]` anchor with class `creator`, conditional class `creator--emphasized`, copy `認識創作者 ↗`, and an accessible name indicating new-page behavior.
+- Produces: one `[data-testid="creator-link"]` anchor with class `creator`, conditional class `creator--emphasized`, copy `認識創作者`, and an accessible name indicating new-page behavior.
 
 - [ ] **Step 1: Replace the last-page-only tests with failing persistence and emphasis tests**
 
@@ -45,7 +45,7 @@ Replace the two creator-link tests in `tests/BookViewer.test.ts` with:
     const w = mount(BookViewer, { props: { showcase } })
     const firstPageLink = w.get('[data-testid="creator-link"]')
 
-    expect(firstPageLink.text()).toBe('認識創作者 ↗')
+    expect(firstPageLink.text()).toBe('認識創作者')
     expect(firstPageLink.attributes()).toMatchObject({
       href: 'https://instagram.com/creator',
       target: '_blank',
@@ -262,7 +262,7 @@ test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面'
     }
   })
 
-  await expect(creatorLink).toHaveText('認識創作者 ↗')
+  await expect(creatorLink).toHaveText('認識創作者')
   await expect(creatorLink).not.toHaveClass(/creator--emphasized/)
   const firstPageLayout = await layout()
 
@@ -297,7 +297,7 @@ test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面'
   expect(mobileHeader.title.right).toBeLessThanOrEqual(mobileHeader.creator.left)
   expect(mobileHeader.creator.right).toBeLessThanOrEqual(mobileHeader.close.left)
   expect(mobileHeader.title.scrollWidth).toBeGreaterThan(mobileHeader.title.width)
-  await expect(creatorLink).toHaveText('認識創作者 ↗')
+  await expect(creatorLink).toHaveText('認識創作者')
 })
 ```
 

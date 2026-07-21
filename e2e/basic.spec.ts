@@ -61,7 +61,7 @@ test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面'
     }
   })
 
-  await expect(creatorLink).toHaveText('認識創作者 ↗')
+  await expect(creatorLink).toHaveText('認識創作者')
   await expect(creatorLink).not.toHaveClass(/creator--emphasized/)
   const firstPageLayout = await layout()
 
@@ -96,7 +96,7 @@ test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面'
   expect(mobileHeader.title.right).toBeLessThanOrEqual(mobileHeader.creator.left)
   expect(mobileHeader.creator.right).toBeLessThanOrEqual(mobileHeader.close.left)
   expect(mobileHeader.title.scrollWidth).toBeGreaterThan(mobileHeader.title.width)
-  await expect(creatorLink).toHaveText('認識創作者 ↗')
+  await expect(creatorLink).toHaveText('認識創作者')
 })
 
 test('shelf 與 info 事件開啟對應面板', async ({ page }) => {

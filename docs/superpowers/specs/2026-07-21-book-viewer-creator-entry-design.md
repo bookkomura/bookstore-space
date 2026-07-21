@@ -16,7 +16,7 @@ visible content upward.
 ## Chosen layout
 
 Move the creator link into the header, between the showcase title and the close
-button. Its visible copy is `認識創作者 ↗`.
+button. Its visible copy is `認識創作者`.
 
 The header has three areas:
 

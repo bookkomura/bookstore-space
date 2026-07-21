@@ -33,7 +33,7 @@ describe('BookViewer', () => {
     const w = mount(BookViewer, { props: { showcase } })
     const firstPageLink = w.get('[data-testid="creator-link"]')
 
-    expect(firstPageLink.text()).toBe('認識創作者 ↗')
+    expect(firstPageLink.text()).toBe('認識創作者')
     expect(firstPageLink.attributes()).toMatchObject({
       href: 'https://instagram.com/creator',
       target: '_blank',
