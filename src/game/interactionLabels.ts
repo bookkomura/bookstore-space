@@ -13,6 +13,7 @@ export function buildInteractionLabels(
       content.shelves.map((shelf) => [shelf.id, shelf.title]),
     ),
     'info-1': '營業資訊',
+    'archive-1': '後頭村・碎碎念檔案室',
   })
 }
 

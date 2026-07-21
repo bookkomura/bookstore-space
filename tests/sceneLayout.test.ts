@@ -6,6 +6,7 @@ import {
   MAX_SHOWCASE_SLOTS,
   PLAYER_SPAWN,
   SHOWCASE_SLOT_ANCHORS,
+  STATIC_INTERACTION_ZONES,
   WORLD_SIZE,
 } from '../src/game/sceneLayout'
 
@@ -15,7 +16,7 @@ describe('sceneLayout', () => {
     expect(PLAYER_SPAWN).toEqual({ x: 1205, y: 250 })
   })
 
-  it('定義五商品、店長選書與營業資訊共七區', () => {
+  it('定義五商品、店長選書、營業資訊與檔案室共八區', () => {
     expect(INTERACTION_ZONES.map((zone) => zone.id)).toEqual([
       'showcase-1',
       'showcase-2',
@@ -24,7 +25,15 @@ describe('sceneLayout', () => {
       'showcase-5',
       'shelf-1',
       'info-1',
+      'archive-1',
     ])
+  })
+
+  it('has one archive entry beside, not inside, the stairs', () => {
+    const archive = STATIC_INTERACTION_ZONES.find((zone) => zone.id === 'archive-1')
+    expect(archive).toEqual({ id: 'archive-1', type: 'archive', x: 245, y: 105, width: 68, height: 135, anchorX: 279, anchorY: 171 })
+    const stairs = COLLISION_RECTS.find((rect) => rect.id === 'stairs')!
+    expect(archive!.x).toBeGreaterThanOrEqual(stairs.x + stairs.width)
   })
 
   it('由右至左為三筆 Showcase 建立置中的書櫃互動點', () => {

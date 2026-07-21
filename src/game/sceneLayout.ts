@@ -52,6 +52,11 @@ export const STATIC_INTERACTION_ZONES: readonly Zone[] = [
     x: 1208, y: 285, width: 92, height: 285,
     anchorX: 1324, anchorY: 300,
   },
+  {
+    id: 'archive-1', type: 'archive',
+    x: 245, y: 105, width: 68, height: 135,
+    anchorX: 279, anchorY: 171,
+  },
 ] as const
 
 export function buildInteractionZones(

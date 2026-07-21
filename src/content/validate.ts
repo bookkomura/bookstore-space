@@ -60,5 +60,10 @@ export function validateContent(
     errors.push('場景必須包含唯一的 info-1 營業資訊互動點')
   }
 
+  const archiveZones = zones.filter((zone) => zone.type === 'archive')
+  if (archiveZones.length !== 1 || archiveZones[0]?.id !== 'archive-1') {
+    errors.push('場景必須包含唯一的 archive-1 碎碎念檔案室互動點')
+  }
+
   return errors
 }

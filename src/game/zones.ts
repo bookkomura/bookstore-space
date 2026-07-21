@@ -1,4 +1,4 @@
-export type ZoneType = 'showcase' | 'shelf' | 'info'
+export type ZoneType = 'showcase' | 'shelf' | 'info' | 'archive'
 
 export interface Zone {
   id: string

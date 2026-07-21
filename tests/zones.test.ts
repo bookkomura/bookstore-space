@@ -15,6 +15,15 @@ const zones: Zone[] = [
 ]
 
 describe('findNearestZone', () => {
+  it('accepts archive as an interaction zone type', () => {
+    const archive: Zone = {
+      id: 'archive-1', type: 'archive',
+      x: 245, y: 105, width: 68, height: 135,
+      anchorX: 279, anchorY: 171,
+    }
+    expect(findNearestZone(279, 171, [archive])).toEqual(archive)
+  })
+
   it('區域不重疊時回傳包含座標的 zone', () => {
     expect(findNearestZone(110, 110, zones)?.id).toBe('showcase-1')
   })

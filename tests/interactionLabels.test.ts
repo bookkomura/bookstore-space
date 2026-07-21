@@ -17,6 +17,10 @@ describe('interactionLabels', () => {
     expect(labels['info-1']).toBe('營業資訊')
   })
 
+  it('labels the archive entry', () => {
+    expect(buildInteractionLabels(content)['archive-1']).toBe('後頭村・碎碎念檔案室')
+  })
+
   it('十一至二十字分成兩行', () => {
     expect(formatMarkerLabel('一二三四五六七八九十一二')).toBe(
       '一二三四五六七八九十\n一二',

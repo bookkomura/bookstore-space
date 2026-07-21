@@ -8,7 +8,7 @@ const content = ContentBundleSchema.parse(sample)
 const zones = buildInteractionZones(content.showcases)
 
 describe('validateContent', () => {
-  it('七個場景互動點與內容完全對應時回傳空陣列', () => {
+  it('八個場景互動點與內容完全對應時回傳空陣列', () => {
     expect(validateContent(zones, content)).toEqual([])
   })
 
@@ -95,5 +95,10 @@ describe('validateContent', () => {
     const infoZone = zones.find((zone) => zone.type === 'info')!
     const multipleInfo = [...zones, { ...infoZone, id: 'info-2' }]
     expect(validateContent(multipleInfo, content).join('\n')).toContain('info-1')
+  })
+
+  it('缺少唯一 archive-1 時回報場景設定錯誤', () => {
+    const noArchive = zones.filter((zone) => zone.id !== 'archive-1')
+    expect(validateContent(noArchive, content).join('\n')).toContain('archive-1')
   })
 })
