@@ -72,6 +72,13 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
   test.skip(isMobile, 'all-seven keyboard walkthrough is desktop acceptance coverage')
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
+  const configuredShowcaseIds = await page.evaluate(async () => {
+    const response = await fetch('/content.json')
+    const content = await response.json() as {
+      showcases: Array<{ id: string }>
+    }
+    return content.showcases.map((showcase) => showcase.id)
+  })
   // Canvas allocation precedes Phaser's scene setup; wait for the scene to
   // subscribe before starting the deterministic entrance route under parallel E2E load.
   await page.waitForTimeout(1_200)
@@ -173,11 +180,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.getByTestId('close').click()
 
     await expect(page.evaluate(() => window.__observedZoneIds)).resolves.toEqual([
-      'showcase-5',
-      'showcase-4',
-      'showcase-3',
-      'showcase-2',
-      'showcase-1',
+      ...configuredShowcaseIds.slice().reverse(),
       'shelf-1',
       'info-1',
     ])
