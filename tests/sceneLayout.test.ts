@@ -10,9 +10,9 @@ import {
 } from '../src/game/sceneLayout'
 
 describe('sceneLayout', () => {
-  it('使用核准背景尺寸與左上入口出生點', () => {
+  it('使用核准背景尺寸與右側入口出生點', () => {
     expect(WORLD_SIZE).toEqual({ width: 1572, height: 1001 })
-    expect(PLAYER_SPAWN).toEqual({ x: 270, y: 300 })
+    expect(PLAYER_SPAWN).toEqual({ x: 1205, y: 250 })
   })
 
   it('定義五商品、店長選書與營業資訊共七區', () => {
