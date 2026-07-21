@@ -115,6 +115,7 @@ function displayDate(sentAt: string) {
   gap: 12px;
   padding: 12px 20px;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   border-bottom: 1px solid rgba(50, 39, 24, 0.2);
 }
@@ -181,6 +182,7 @@ main:focus-visible {
 main {
   min-height: 0;
   padding: 24px max(20px, calc((100% - 42rem) / 2));
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
   background: #f8f1e5;

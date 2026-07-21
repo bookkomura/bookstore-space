@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import NewsletterArchive from '../src/ui/NewsletterArchive.vue'
 import type { Newsletter } from '../src/content/schema'
 
@@ -56,6 +57,13 @@ describe('NewsletterArchive', () => {
     await wrapper.get('[data-testid="close"]').trigger('click')
 
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('isolates horizontal issue navigation from vertical paper scrolling', () => {
+    const source = readFileSync('src/ui/NewsletterArchive.vue', 'utf8')
+
+    expect(source).toMatch(/\.issue-nav\s*\{[^}]*overflow-y:\s*hidden;/s)
+    expect(source).toMatch(/main\s*\{[^}]*overflow-x:\s*hidden;/s)
   })
 
   it('falls back to the complete subject when its title suffix is empty', () => {
