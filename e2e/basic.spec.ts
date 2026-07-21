@@ -72,13 +72,14 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
   test.skip(isMobile, 'all-seven keyboard walkthrough is desktop acceptance coverage')
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
-  const configuredShowcaseIds = await page.evaluate(async () => {
+  const configuredShowcases = await page.evaluate(async () => {
     const response = await fetch('/content.json')
     const content = await response.json() as {
-      showcases: Array<{ id: string }>
+      showcases: Array<{ id: string; title: string }>
     }
-    return content.showcases.map((showcase) => showcase.id)
+    return content.showcases
   })
+  const showcaseWalkthrough = configuredShowcases.slice().reverse()
   // Canvas allocation precedes Phaser's scene setup; wait for the scene to
   // subscribe before starting the deterministic entrance route under parallel E2E load.
   await page.waitForTimeout(1_200)
@@ -91,72 +92,54 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
   })
 
   try {
-    // The entrance route passes around the central table, then reaches the
-    // leftmost showcase through collision-aware keyboard movement only.
-    await page.keyboard.down('ArrowRight')
-    await page.waitForTimeout(900)
-    await page.keyboard.down('ArrowUp')
-    await page.waitForTimeout(600)
-    await page.keyboard.up('ArrowUp')
-    await waitForZone(page, 'showcase-5')
-    await page.keyboard.up('ArrowRight')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-5-proximity.png',
-    })
-
-    await page.keyboard.press('Space')
     const viewer = page.getByTestId('book-viewer')
-    await expect(viewer).toBeVisible()
-    await expect(viewer).toContainText('獨立刊物選集')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-5-overlay.png',
-    })
+    if (showcaseWalkthrough.length > 0) {
+      // The entrance route passes around the central table, then reaches the
+      // leftmost configured showcase through collision-aware keyboard movement only.
+      await page.keyboard.down('ArrowRight')
+      await page.waitForTimeout(900)
+      await page.keyboard.down('ArrowUp')
+      await page.waitForTimeout(600)
+      await page.keyboard.up('ArrowUp')
+      await waitForZone(page, showcaseWalkthrough[0].id)
+      await page.keyboard.up('ArrowRight')
 
-    // Holding movement during an overlay must not advance the player; closing
-    // it then permits the same keyboard route to continue to showcase-4.
-    const eventCountWhileFrozen = await page.evaluate(
-      () => window.__observedZoneIds?.length,
-    )
-    await page.keyboard.down('ArrowRight')
-    await page.waitForTimeout(350)
-    await expect.poll(
-      () => page.evaluate(() => window.__observedZoneIds?.length),
-    ).toBe(eventCountWhileFrozen)
-    await page.keyboard.up('ArrowRight')
-    await page.getByTestId('close').click()
-    await expect(viewer).not.toBeVisible()
+      for (const [index, showcase] of showcaseWalkthrough.entries()) {
+        if (index > 0) await walkUntilZone(page, 'ArrowRight', showcase.id)
 
-    await walkUntilZone(page, 'ArrowRight', 'showcase-4')
-    await page.keyboard.press('Space')
-    await expect(viewer).toContainText('植物染布品')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-4-overlay.png',
-    })
-    await page.getByTestId('close').click()
+        await page.screenshot({
+          path: `/private/tmp/bookstore-task20-evidence/desktop-${showcase.id}-proximity.png`,
+        })
+        await page.keyboard.press('Space')
+        await expect(viewer).toBeVisible()
+        await expect(viewer).toContainText(showcase.title)
+        await page.screenshot({
+          path: `/private/tmp/bookstore-task20-evidence/desktop-${showcase.id}-overlay.png`,
+        })
 
-    await walkUntilZone(page, 'ArrowRight', 'showcase-3')
-    await page.keyboard.press('Space')
-    await expect(viewer).toContainText('手作陶器')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-3-overlay.png',
-    })
-    await page.getByTestId('close').click()
+        if (index === 0) {
+          // Holding movement during an overlay must not advance the player;
+          // closing it permits traversal to the next Showcase.
+          const eventCountWhileFrozen = await page.evaluate(
+            () => window.__observedZoneIds?.length,
+          )
+          await page.keyboard.down('ArrowRight')
+          await page.waitForTimeout(350)
+          await expect.poll(
+            () => page.evaluate(() => window.__observedZoneIds?.length),
+          ).toBe(eventCountWhileFrozen)
+          await page.keyboard.up('ArrowRight')
+        }
 
-    await walkUntilZone(page, 'ArrowRight', 'showcase-2')
-    await page.keyboard.press('Space')
-    await expect(viewer).toContainText('插畫明信片')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-2-overlay.png',
-    })
-    await page.getByTestId('close').click()
-
-    await walkUntilZone(page, 'ArrowRight', 'showcase-1')
-    await page.keyboard.press('Space')
-    await expect(viewer).toContainText('手工蠟燭系列')
-    await page.screenshot({
-      path: '/private/tmp/bookstore-task20-evidence/desktop-showcase-1-overlay.png',
-    })
-    await page.getByTestId('close').click()
+        await page.getByTestId('close').click()
+        await expect(viewer).not.toBeVisible()
+      }
+    } else {
+      // With no Showcase zones, route from the entrance directly to the shelf.
+      await page.keyboard.down('ArrowLeft')
+      await page.waitForTimeout(250)
+      await page.keyboard.up('ArrowLeft')
+    }
 
     await walkUntilZone(page, 'ArrowDown', 'shelf-1')
     const shelf = page.getByTestId('shelf-panel')
@@ -180,7 +163,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.getByTestId('close').click()
 
     await expect(page.evaluate(() => window.__observedZoneIds)).resolves.toEqual([
-      ...configuredShowcaseIds.slice().reverse(),
+      ...showcaseWalkthrough.map((showcase) => showcase.id),
       'shelf-1',
       'info-1',
     ])
