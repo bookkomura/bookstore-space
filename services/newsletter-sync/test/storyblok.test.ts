@@ -5,7 +5,7 @@ import { createStoryblokPublisher } from '../src/storyblok.js'
 const newsletter = {
   messageId: '<private-message-id@example.test>',
   sentAt: '2026-07-19T05:40:25.000Z',
-  subject: '小村碎碎念～總是會到 <private-message-id@example.test>',
+  subject: '小村碎碎念～總是會到',
   from: 'info.rewildesign@gmail.com',
   blocks: [
     { type: 'paragraph' as const, text: '前言' },
@@ -27,6 +27,7 @@ describe('createStoryblokPublisher', () => {
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 42, slug: 'newsletters', is_folder: true }] }))
+      .mockResolvedValueOnce(jsonResponse({ stories: [] }))
       .mockResolvedValueOnce(
         jsonResponse({
           id: 7,
@@ -44,22 +45,26 @@ describe('createStoryblokPublisher', () => {
       uuid: () => 'uid-1',
     })
 
-    await expect(publisher.publish(newsletter)).resolves.toEqual({ storyId: 99 })
+    await expect(publisher.publish(newsletter, 'publication-key')).resolves.toEqual({ storyId: 99 })
 
     const folderRequest = new URL(fetcher.mock.calls[0][0] as string)
     expect(folderRequest.pathname).toBe('/v1/spaces/space/stories')
     expect(folderRequest.searchParams.get('folder_only')).toBe('true')
     expect(folderRequest.searchParams.get('search')).toBe('newsletters')
 
-    const signedAssetRequest = new Request(fetcher.mock.calls[1][0], fetcher.mock.calls[1][1])
-    expect(await signedAssetRequest.json()).toEqual({ filename: 'market.jpg', validate_upload: 1 })
-    expect(fetcher.mock.calls[2][0]).toBe('https://uploads.example.test/')
+    const existingStoryRequest = new URL(fetcher.mock.calls[1][0] as string)
+    expect(existingStoryRequest.searchParams.get('by_slugs')).toBe('newsletters/newsletter-publication-key')
 
-    const storyRequest = new Request(fetcher.mock.calls[4][0], fetcher.mock.calls[4][1])
+    const signedAssetRequest = new Request(fetcher.mock.calls[2][0], fetcher.mock.calls[2][1])
+    expect(await signedAssetRequest.json()).toEqual({ filename: 'market.jpg', validate_upload: 1 })
+    expect(fetcher.mock.calls[3][0]).toBe('https://uploads.example.test/')
+
+    const storyRequest = new Request(fetcher.mock.calls[5][0], fetcher.mock.calls[5][1])
     const payload = (await storyRequest.json()) as { publish: boolean; story: Record<string, unknown> }
     expect(payload.publish).toBe(true)
     expect(payload.story).toMatchObject({
-      name: '小村碎碎念～總是會到',
+      name: 'newsletter-publication-key',
+      slug: 'newsletter-publication-key',
       parent_id: 42,
       content: {
         component: 'newsletter',
@@ -79,14 +84,18 @@ describe('createStoryblokPublisher', () => {
       },
     })
     expect(JSON.stringify(payload)).not.toContain(newsletter.messageId)
-    expect(String(payload.story.slug)).not.toContain(newsletter.messageId)
+    expect(String(payload.story.slug)).toBe('newsletter-publication-key')
   })
 
-  it('fails when Storyblok does not confirm the created story is published', async () => {
+  it('recovers a published story by deterministic slug when a create response is lost', async () => {
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 42, slug: 'newsletters', is_folder: true }] }))
-      .mockResolvedValueOnce(jsonResponse({ story: { id: 99, published: false } }))
+      .mockResolvedValueOnce(jsonResponse({ stories: [] }))
+      .mockRejectedValueOnce(new Error('connection reset after create'))
+      .mockResolvedValueOnce(
+        jsonResponse({ stories: [{ id: 99, slug: 'newsletter-publication-key', published: true }] }),
+      )
     const publisher = createStoryblokPublisher({
       spaceId: 'space',
       managementToken: 'management-token',
@@ -99,6 +108,41 @@ describe('createStoryblokPublisher', () => {
       attachmentsByCid: new Map(),
     }
 
-    await expect(publisher.publish(withoutAssets)).rejects.toThrow('did not confirm publication')
+    await expect(publisher.publish(withoutAssets, 'publication-key')).resolves.toEqual({ storyId: 99 })
+    expect(fetcher).toHaveBeenCalledTimes(4)
+  })
+
+  it.each([
+    ['subject', (issue: typeof newsletter) => ({ ...issue, subject: issue.messageId })],
+    ['paragraph', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'paragraph' as const, text: issue.messageId }] })],
+    ['image alt', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'image' as const, cid: 'photo-1', alt: issue.messageId }] })],
+    ['image caption', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'image' as const, cid: 'photo-1', alt: 'alt', caption: issue.messageId }] })],
+    ['link label', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'link' as const, label: issue.messageId, href: 'https://example.test' }] })],
+    ['link href', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'link' as const, label: 'label', href: `https://example.test/${issue.messageId}` }] })],
+    ['attachment filename', (issue: typeof newsletter) => ({ ...issue, attachmentsByCid: new Map([['photo-1', { content: Buffer.from('x'), filename: issue.messageId, contentType: 'image/jpeg' }]]) })],
+  ])('rejects a Message-ID in public %s before making any Storyblok request', async (_, mutate) => {
+    const fetcher = vi.fn<typeof fetch>()
+    const publisher = createStoryblokPublisher({
+      spaceId: 'space',
+      managementToken: 'management-token',
+      fetcher,
+      uuid: () => 'uid-1',
+    })
+
+    await expect(publisher.publish(mutate(newsletter), 'publication-key')).rejects.toThrow('Message-ID')
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('rejects a corrupt publication key containing the Message-ID before making any Storyblok request', async () => {
+    const fetcher = vi.fn<typeof fetch>()
+    const publisher = createStoryblokPublisher({
+      spaceId: 'space',
+      managementToken: 'management-token',
+      fetcher,
+      uuid: () => 'uid-1',
+    })
+
+    await expect(publisher.publish(newsletter, newsletter.messageId)).rejects.toThrow('Message-ID')
+    expect(fetcher).not.toHaveBeenCalled()
   })
 })

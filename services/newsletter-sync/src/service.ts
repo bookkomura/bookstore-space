@@ -35,17 +35,19 @@ export class NewsletterSyncService {
     if (!isEligibleMessage(message)) return 'ignored'
 
     const claim = await this.dependencies.repository.claim(message.messageId, message.gmailMessageId)
-    if (claim === 'duplicate') return 'duplicate'
+    if (claim.status === 'published') return 'duplicate'
+    if (claim.status === 'in_progress') throw new SyncInProgressError()
 
     let publication: { storyId: number }
     try {
-      publication = await this.dependencies.publisher.publish(message)
+      publication = await this.dependencies.publisher.publish(message, claim.publicationKey)
     } catch (error) {
-      await this.dependencies.repository.markFailed(message.messageId, errorMessage(error))
+      await this.dependencies.repository.markFailed(message.messageId, claim.leaseToken, errorMessage(error))
       throw error
     }
 
-    await this.dependencies.repository.markPublished(message.messageId, publication.storyId)
+    const markResult = await this.dependencies.repository.markPublished(message.messageId, claim.leaseToken, publication.storyId)
+    if (markResult !== 'marked') throw new Error('Publication lease was lost before it could be marked')
     try {
       await this.dependencies.deployHook()
     } catch {
@@ -83,6 +85,13 @@ export class NewsletterSyncService {
       await this.dependencies.repository.enqueueDeployRetry(storyId)
       throw error
     }
+  }
+}
+
+export class SyncInProgressError extends Error {
+  constructor() {
+    super('Newsletter is currently being processed by an active lease')
+    this.name = 'SyncInProgressError'
   }
 }
 

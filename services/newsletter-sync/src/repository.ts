@@ -1,13 +1,18 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 
 import { FieldValue, type Firestore } from '@google-cloud/firestore'
 
-export type ClaimResult = 'claimed' | 'duplicate'
+export type ClaimResult =
+  | { status: 'claimed'; publicationKey: string; leaseToken: string }
+  | { status: 'published'; storyId: number }
+  | { status: 'in_progress' }
+
+export type MarkResult = 'marked' | 'stale'
 
 export interface SyncRepository {
   claim(messageId: string, gmailMessageId?: string): Promise<ClaimResult>
-  markPublished(messageId: string, storyId: number): Promise<void>
-  markFailed(messageId: string, reason: string): Promise<void>
+  markPublished(messageId: string, leaseToken: string, storyId: number): Promise<MarkResult>
+  markFailed(messageId: string, leaseToken: string, reason: string): Promise<MarkResult>
   getCursor(): Promise<string | null>
   setCursor(historyId: string): Promise<void>
   enqueueDeployRetry(storyId: number): Promise<void>
@@ -22,6 +27,7 @@ export function messageDocumentId(messageId: string): string {
 export function createFirestoreSyncRepository(
   firestore: Firestore,
   now: () => Date = () => new Date(),
+  opaqueToken: () => string = randomUUID,
 ): SyncRepository {
   const cursor = firestore.collection('newsletterSyncState').doc('cursor')
 
@@ -33,12 +39,15 @@ export function createFirestoreSyncRepository(
         const data = snapshot.data()
         const currentTime = now()
         const leaseExpiresAt = asDate(data?.processingLeaseExpiresAt)
-        if (
-          data?.status === 'published' ||
-          (data?.status === 'processing' && leaseExpiresAt !== null && leaseExpiresAt > currentTime)
-        ) {
-          return 'duplicate'
+        if (data?.status === 'published' && typeof data.storyId === 'number') {
+          return { status: 'published', storyId: data.storyId }
         }
+        if (data?.status === 'processing' && leaseExpiresAt !== null && leaseExpiresAt > currentTime) {
+          return { status: 'in_progress' }
+        }
+
+        const publicationKey = typeof data?.publicationKey === 'string' ? data.publicationKey : opaqueToken()
+        const leaseToken = opaqueToken()
 
         transaction.set(
           message,
@@ -46,43 +55,77 @@ export function createFirestoreSyncRepository(
             messageId,
             ...(gmailMessageId ? { gmailMessageId } : {}),
             status: 'processing',
+            publicationKey,
+            leaseToken,
             processingLeaseExpiresAt: new Date(currentTime.getTime() + PROCESSING_LEASE_MS),
             updatedAt: currentTime,
             ...(snapshot.exists ? {} : { createdAt: currentTime, retryCount: 0 }),
           },
           { merge: true },
         )
-        return 'claimed'
+        return { status: 'claimed', publicationKey, leaseToken }
       })
     },
 
-    async markPublished(messageId, storyId) {
-      const currentTime = now()
-      await firestore.collection('newsletterMessages').doc(messageDocumentId(messageId)).set(
-        {
-          status: 'published',
-          storyId,
-          publishedAt: currentTime,
-          processingLeaseExpiresAt: null,
-          updatedAt: currentTime,
-        },
-        { merge: true },
-      )
+    async markPublished(messageId, leaseToken, storyId) {
+      const message = firestore.collection('newsletterMessages').doc(messageDocumentId(messageId))
+      return firestore.runTransaction(async (transaction): Promise<MarkResult> => {
+        const snapshot = await transaction.get(message)
+        const currentTime = now()
+        const data = snapshot.data()
+        const leaseExpiresAt = asDate(data?.processingLeaseExpiresAt)
+        if (
+          data?.status !== 'processing' ||
+          data?.leaseToken !== leaseToken ||
+          leaseExpiresAt === null ||
+          leaseExpiresAt <= currentTime
+        ) {
+          return 'stale'
+        }
+        transaction.set(
+          message,
+          {
+            status: 'published',
+            storyId,
+            publishedAt: currentTime,
+            processingLeaseExpiresAt: null,
+            updatedAt: currentTime,
+          },
+          { merge: true },
+        )
+        return 'marked'
+      })
     },
 
-    async markFailed(messageId, reason) {
-      const currentTime = now()
-      await firestore.collection('newsletterMessages').doc(messageDocumentId(messageId)).set(
-        {
-          status: 'failed',
-          errorReason: reason,
-          failedAt: currentTime,
-          processingLeaseExpiresAt: null,
-          retryCount: FieldValue.increment(1),
-          updatedAt: currentTime,
-        },
-        { merge: true },
-      )
+    async markFailed(messageId, leaseToken, reason) {
+      const message = firestore.collection('newsletterMessages').doc(messageDocumentId(messageId))
+      return firestore.runTransaction(async (transaction): Promise<MarkResult> => {
+        const snapshot = await transaction.get(message)
+        const currentTime = now()
+        const data = snapshot.data()
+        const leaseExpiresAt = asDate(data?.processingLeaseExpiresAt)
+        if (
+          data?.status !== 'processing' ||
+          data?.leaseToken !== leaseToken ||
+          leaseExpiresAt === null ||
+          leaseExpiresAt <= currentTime
+        ) {
+          return 'stale'
+        }
+        transaction.set(
+          message,
+          {
+            status: 'failed',
+            errorReason: reason,
+            failedAt: currentTime,
+            processingLeaseExpiresAt: null,
+            retryCount: FieldValue.increment(1),
+            updatedAt: currentTime,
+          },
+          { merge: true },
+        )
+        return 'marked'
+      })
     },
 
     async getCursor() {
