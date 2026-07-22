@@ -17,6 +17,7 @@ export interface HttpDependencies {
   service: Pick<NewsletterSyncService, 'process' | 'syncHistory'>
   gateway: Pick<GmailGateway, 'findRecentInbox' | 'renewInboxWatch'>
   repository: {
+    getCursor(): Promise<string | null>
     getWatch(): Promise<WatchState | null>
     setWatch(watch: WatchState): Promise<void>
     setCursor(historyId: string): Promise<void>
@@ -83,11 +84,13 @@ export function createHttpApp(dependencies: HttpDependencies): Express {
       return
     }
     try {
-      const watch = await dependencies.repository.getWatch()
-      if (!watch) throw new Error('No Gmail watch cursor is available')
+      const cursor = await dependencies.repository.getCursor()
+      const watch = cursor ? null : await dependencies.repository.getWatch()
+      const historyId = cursor ?? watch?.historyId
+      if (!historyId) throw new Error('No Gmail watch cursor is available')
       let count = 0
       try {
-        const result = await dependencies.service.syncHistory(watch.historyId)
+        const result = await dependencies.service.syncHistory(historyId)
         count = result.examined
       } catch (error) {
         if (!(error instanceof HistoryCursorExpiredError)) throw error
@@ -96,7 +99,9 @@ export function createHttpApp(dependencies: HttpDependencies): Express {
           const parsed = await parseNewsletter(message.raw)
           await dependencies.service.process({ ...parsed, gmailMessageId: message.gmailMessageId, labelIds: message.labelIds })
         }
-        await dependencies.repository.setCursor(watch.historyId)
+        const freshWatch = await dependencies.gateway.renewInboxWatch(dependencies.config.gmailPubsubTopic)
+        await dependencies.repository.setWatch(freshWatch)
+        await dependencies.repository.setCursor(freshWatch.historyId)
         count = messages.length
       }
       logger.info({ requestId, status: 204, count })

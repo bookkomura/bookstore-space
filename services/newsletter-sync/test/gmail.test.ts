@@ -121,4 +121,16 @@ describe('createGmailGateway', () => {
       pageToken: 'next-page',
     })
   })
+
+  it('fails retryably before downloading raw MIME when the recent Inbox result exceeds its safety limit', async () => {
+    const messages = Array.from({ length: 101 }, (_, index) => ({ id: `message-${index}` }))
+    const list = vi.fn().mockResolvedValue({ data: { messages } })
+    const get = vi.fn()
+    const client = { users: { messages: { list, get } } }
+    const gateway = createGmailGateway(client as never, 'mailbox@example.com')
+
+    await expect(gateway.findRecentInbox(30)).rejects.toThrow('Recent Inbox result exceeds the 100-message safety limit')
+
+    expect(get).not.toHaveBeenCalled()
+  })
 })

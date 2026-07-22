@@ -165,7 +165,11 @@ export function createFirestoreSyncRepository(
     },
 
     async setCursor(historyId) {
-      await cursor.set({ historyId, updatedAt: now() }, { merge: true })
+      await firestore.runTransaction(async (transaction) => {
+        const currentHistoryId = (await transaction.get(cursor)).data()?.historyId
+        if (typeof currentHistoryId === 'string' && compareHistoryIds(historyId, currentHistoryId) <= 0) return
+        transaction.set(cursor, { historyId, updatedAt: now() }, { merge: true })
+      })
     },
 
     async getWatch() {
@@ -209,6 +213,12 @@ export function createFirestoreSyncRepository(
       })
     },
   }
+}
+
+function compareHistoryIds(left: string, right: string): number {
+  const leftValue = BigInt(left)
+  const rightValue = BigInt(right)
+  return leftValue === rightValue ? 0 : leftValue > rightValue ? 1 : -1
 }
 
 function asDate(value: unknown): Date | null {

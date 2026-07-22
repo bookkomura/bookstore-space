@@ -2,6 +2,7 @@ import type { gmail_v1 } from 'googleapis'
 
 const NEWSLETTER_SENDER = 'info.rewildesign@gmail.com'
 const SUBJECT_NEEDLE = '小村碎碎念'
+const RECENT_INBOX_MESSAGE_LIMIT = 100
 
 export interface GmailMessageRef {
   gmailMessageId: string
@@ -25,6 +26,13 @@ export class HistoryCursorExpiredError extends Error {
   constructor() {
     super('The Gmail history cursor has expired')
     this.name = 'HistoryCursorExpiredError'
+  }
+}
+
+export class RecentInboxLimitExceededError extends Error {
+  constructor() {
+    super(`Recent Inbox result exceeds the ${RECENT_INBOX_MESSAGE_LIMIT}-message safety limit`)
+    this.name = 'RecentInboxLimitExceededError'
   }
 }
 
@@ -101,21 +109,21 @@ export function createGmailGateway(client: gmail_v1.Gmail, userId = 'me'): Gmail
         const response = await client.users.messages.list({ userId, q, ...(pageToken ? { pageToken } : {}) })
         for (const message of response.data.messages ?? []) {
           if (message.id) messageIds.add(message.id)
+          if (messageIds.size > RECENT_INBOX_MESSAGE_LIMIT) throw new RecentInboxLimitExceededError()
         }
         pageToken = response.data.nextPageToken ?? undefined
       } while (pageToken)
 
-      const messages = await Promise.all(
-        [...messageIds].map(async (gmailMessageId) => {
-          const response = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
-          return {
-            gmailMessageId,
-            raw: response.data.raw ?? '',
-            labelIds: response.data.labelIds ?? [],
-            internalDate: Number(response.data.internalDate ?? 0),
-          }
-        }),
-      )
+      const messages = []
+      for (const gmailMessageId of messageIds) {
+        const response = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
+        messages.push({
+          gmailMessageId,
+          raw: response.data.raw ?? '',
+          labelIds: response.data.labelIds ?? [],
+          internalDate: Number(response.data.internalDate ?? 0),
+        })
+      }
       return messages
         .sort((left, right) => left.internalDate - right.internalDate)
         .map(({ internalDate: _internalDate, ...message }) => message)

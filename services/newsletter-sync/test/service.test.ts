@@ -32,7 +32,13 @@ function createDependencies() {
 
 function createInMemoryFirestore() {
   const documents = new Map<string, Record<string, unknown>>()
-  const document = (path: string) => ({ path })
+  const document = (path: string) => ({
+    path,
+    get: async () => {
+      const value = documents.get(path)
+      return { exists: value !== undefined, data: () => value }
+    },
+  })
   return {
     documents,
     firestore: {
@@ -66,6 +72,16 @@ describe('NewsletterSyncService', () => {
       watchHistoryId: '300',
       watchExpiration: '1785542400000',
     })
+  })
+
+  it('keeps the newest numeric Gmail history cursor when deliveries complete out of order', async () => {
+    const { firestore } = createInMemoryFirestore()
+    const repository = createFirestoreSyncRepository(firestore as never, () => new Date('2026-07-19T00:00:00.000Z'))
+
+    await repository.setCursor('900')
+    await repository.setCursor('800')
+
+    await expect(repository.getCursor()).resolves.toBe('900')
   })
 
   it('writes a pending deploy outbox record atomically with published state', async () => {

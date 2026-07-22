@@ -18,6 +18,7 @@ function createDependencies() {
       findRecentInbox: vi.fn().mockResolvedValue([]),
     },
     repository: {
+      getCursor: vi.fn().mockResolvedValue('250'),
       getWatch: vi.fn().mockResolvedValue({ historyId: '200', expiration: '2026-07-30T00:00:00.000Z' }),
       setWatch: vi.fn().mockResolvedValue(undefined),
       setCursor: vi.fn().mockResolvedValue(undefined),
@@ -79,8 +80,20 @@ describe('createHttpApp', () => {
     expect(dependencies.repository.setCursor).toHaveBeenCalledWith('300')
   })
 
-  it('replays to the latest watch cursor', async () => {
+  it('replays from the persisted cursor instead of overwriting it with a renewed watch cursor', async () => {
     const dependencies = createDependencies()
+
+    await request(createHttpApp(dependencies))
+      .post('/tasks/replay')
+      .set('Authorization', `Bearer ${secret}`)
+      .expect(204)
+
+    expect(dependencies.service.syncHistory).toHaveBeenCalledWith('250')
+  })
+
+  it('uses the watch cursor only when no persisted cursor exists', async () => {
+    const dependencies = createDependencies()
+    dependencies.repository.getCursor.mockResolvedValueOnce(null)
 
     await request(createHttpApp(dependencies))
       .post('/tasks/replay')
@@ -100,6 +113,10 @@ describe('createHttpApp', () => {
     dependencies.parseNewsletter
       .mockResolvedValueOnce({ messageId: '<first>', gmailMessageId: 'parsed-first', labelIds: [] })
       .mockResolvedValueOnce({ messageId: '<second>', gmailMessageId: 'parsed-second', labelIds: [] })
+    dependencies.gateway.renewInboxWatch.mockResolvedValueOnce({
+      historyId: '350',
+      expiration: '2026-08-02T00:00:00.000Z',
+    })
 
     await request(createHttpApp(dependencies))
       .post('/tasks/replay')
@@ -117,6 +134,34 @@ describe('createHttpApp', () => {
       gmailMessageId: 'second',
       labelIds: ['INBOX'],
     })
-    expect(dependencies.repository.setCursor).toHaveBeenCalledWith('200')
+    expect(dependencies.gateway.renewInboxWatch).toHaveBeenCalledWith('projects/bookstore-space/topics/newsletter-sync')
+    expect(dependencies.repository.setWatch).toHaveBeenCalledWith({
+      historyId: '350',
+      expiration: '2026-08-02T00:00:00.000Z',
+    })
+    expect(dependencies.repository.setCursor).toHaveBeenCalledWith('350')
+    expect(dependencies.service.process.mock.invocationCallOrder[1]).toBeLessThan(
+      dependencies.gateway.renewInboxWatch.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('does not renew or advance the cursor when expired-history recovery does not process every message', async () => {
+    const dependencies = createDependencies()
+    dependencies.service.syncHistory.mockRejectedValueOnce(new HistoryCursorExpiredError())
+    dependencies.gateway.findRecentInbox.mockResolvedValueOnce([
+      { gmailMessageId: 'first', raw: 'first-raw', labelIds: ['INBOX'] },
+      { gmailMessageId: 'second', raw: 'second-raw', labelIds: ['INBOX'] },
+    ])
+    dependencies.parseNewsletter.mockResolvedValue({ messageId: '<message>', gmailMessageId: 'parsed', labelIds: [] })
+    dependencies.service.process.mockRejectedValueOnce(new Error('temporary publish failure'))
+
+    await request(createHttpApp(dependencies))
+      .post('/tasks/replay')
+      .set('Authorization', `Bearer ${secret}`)
+      .expect(500)
+
+    expect(dependencies.gateway.renewInboxWatch).not.toHaveBeenCalled()
+    expect(dependencies.repository.setWatch).not.toHaveBeenCalled()
+    expect(dependencies.repository.setCursor).not.toHaveBeenCalled()
   })
 })
