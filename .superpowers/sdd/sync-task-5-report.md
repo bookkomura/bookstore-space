@@ -54,6 +54,19 @@ Observed result: `1 passed`, `4 passed` tests.
 | `terraform fmt -check -recursive infra/newsletter-sync` | Not run: Terraform is unavailable in this environment; exact shell result: `zsh:1: command not found: terraform`. |
 | `git diff --check` | Passed with no whitespace errors. |
 
+## Review fix: Gmail topic publisher IAM and deployment verification docs
+
+Added a topic-scoped `roles/pubsub.publisher` grant for `serviceAccount:gmail-api-push@system.gserviceaccount.com`, allowing Gmail to establish and publish mailbox watches to the declared Gmail topic. Updated the IAM documentation to describe that narrowly scoped grant.
+
+Moved `gcloud run services get-iam-policy` out of pre-apply review and into an explicitly post-apply verification section, because the Cloud Run service does not exist on a first deployment before apply.
+
+| Command | Result |
+| --- | --- |
+| `rg -n -F 'serviceAccount:gmail-api-push@system.gserviceaccount.com' infra/newsletter-sync/main.tf` | Passed: found the Gmail API push service-account member in the topic IAM binding. |
+| `rg -n -F 'After the first full apply has created the Cloud Run service' infra/newsletter-sync/README.md` | Passed: found the explicit post-apply condition. |
+| `git diff --check` | Passed with no whitespace errors. |
+| `terraform fmt -check -recursive infra/newsletter-sync` | Not run: Terraform is unavailable in this environment; exact shell result: `zsh:1: command not found: terraform`. |
+
 ## Assumptions and concerns
 
 - Terraform has not been formatted or validated locally because the `terraform` executable is unavailable. Run `terraform fmt -check -recursive infra/newsletter-sync` and `terraform validate` in an environment with Terraform 1.6+ and the Google provider before applying.

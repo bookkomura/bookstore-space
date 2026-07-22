@@ -16,6 +16,7 @@ The IAM model is intentionally separated:
 | Pub/Sub push service account | Cloud Run invoker on this service only. |
 | Renewal Job service account | Access to the renewal bearer secret and Cloud Run invoker on this service only. |
 | Scheduler service account | Cloud Run invoker on this Job only. |
+| Gmail API push service account (`gmail-api-push@system.gserviceaccount.com`) | Pub/Sub publisher on the Gmail watch topic only, so Gmail can establish and publish watch notifications. |
 | Google-managed Pub/Sub and Scheduler agents | Token-creation permission only for their respective caller service accounts. |
 
 Pub/Sub pushes to `POST /pubsub/gmail` with an OIDC token whose audience is the deployed service URL. No `allUsers` Cloud Run IAM binding is created. The renewal Job gets an identity token from Cloud Run metadata and places it in `X-Serverless-Authorization`; Cloud Run consumes that header for IAM while the service still receives the exact bearer header it already requires at `POST /tasks/renew-watch`.
@@ -94,7 +95,14 @@ Before a real apply, run:
 ```sh
 terraform fmt -check -recursive
 terraform validate
+```
+
+## Post-apply verification
+
+After the first full apply has created the Cloud Run service, run:
+
+```sh
 gcloud run services get-iam-policy newsletter-sync --region=REGION
 ```
 
-Confirm the policy grants `roles/run.invoker` only to the Pub/Sub push and renewal Job service accounts, confirms the Job invokes through the scheduler account, and does not add a public invoker. Exercise Pub/Sub delivery only through an approved non-production verification procedure.
+Confirm the policy grants `roles/run.invoker` only to the Pub/Sub push and renewal Job service accounts, confirms the Job invokes through the scheduler account, and does not add a public invoker. Also confirm the Gmail API push service account has `roles/pubsub.publisher` on the Gmail watch topic. Exercise Pub/Sub delivery only through an approved non-production verification procedure.

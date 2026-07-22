@@ -85,6 +85,12 @@ resource "google_pubsub_topic" "gmail" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_pubsub_topic_iam_member" "gmail_publisher" {
+  topic  = google_pubsub_topic.gmail.name
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:gmail-api-push@system.gserviceaccount.com"
+}
+
 resource "google_cloud_run_v2_service" "sync" {
   name     = local.service_name
   location = var.region
