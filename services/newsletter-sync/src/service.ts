@@ -85,11 +85,7 @@ export class NewsletterSyncService {
     const pending = await this.dependencies.repository.getPendingDeploy(publicationKey)
     if (!pending) return
     if (pending.storyId !== storyId) throw new Error('Deploy outbox story does not match the published story')
-    try {
-      await this.dependencies.deployHook()
-    } catch {
-      return
-    }
+    await this.dependencies.deployHook()
     await this.dependencies.repository.markDeployComplete(publicationKey, storyId)
   }
 }

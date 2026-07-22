@@ -118,13 +118,42 @@ describe('NewsletterSyncService', () => {
     repository.claim.mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' }).mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
-    await expect(service.process(message)).resolves.toBe('published')
+    await expect(service.process(message)).rejects.toThrow('deploy unavailable')
+    expect(repository.markDeployComplete).not.toHaveBeenCalled()
     await expect(service.process(message)).resolves.toBe('duplicate')
 
     expect(repository.markPublished).toHaveBeenCalledWith(message.messageId, 'lease-1', 99)
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(deployHook).toHaveBeenCalledTimes(2)
     expect(repository.markDeployComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not advance the history cursor on a pending-outbox hook failure, then retries hook-only from published state', async () => {
+    const { repository, publisher, deployHook } = createDependencies()
+    repository.claim
+      .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
+      .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
+    deployHook.mockRejectedValueOnce(new Error('deploy unavailable')).mockResolvedValueOnce(undefined)
+    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{ gmailMessageId: 'eligible', raw: 'eligible-raw', labelIds: ['INBOX'] }]) }
+    const parseNewsletter = vi.fn().mockResolvedValue(message)
+    const service = new NewsletterSyncService({ repository, publisher, deployHook, gateway, parseNewsletter })
+
+    await expect(service.syncHistory('new-history')).rejects.toThrow('deploy unavailable')
+    expect(repository.setCursor).not.toHaveBeenCalled()
+    expect(repository.markDeployComplete).not.toHaveBeenCalled()
+    await expect(service.process(message)).resolves.toBe('duplicate')
+
+    expect(publisher.publish).not.toHaveBeenCalled()
+    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99)
+  })
+
+  it('exposes a deploy-hook failure from retryDeploy and leaves the outbox pending', async () => {
+    const { repository, deployHook } = createDependencies()
+    deployHook.mockRejectedValueOnce(new Error('deploy unavailable'))
+    const service = new NewsletterSyncService({ repository, publisher: { publish: vi.fn() }, deployHook })
+
+    await expect(service.retryDeploy('publication-key', 99)).rejects.toThrow('deploy unavailable')
+    expect(repository.markDeployComplete).not.toHaveBeenCalled()
   })
 
   it('drains the durable outbox on a later published delivery after interruption before the hook', async () => {
