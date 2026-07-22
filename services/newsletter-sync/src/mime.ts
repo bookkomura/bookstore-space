@@ -118,8 +118,8 @@ function directText(node: ReturnType<ReturnType<typeof load>>): string {
 
 function followingCaptionNode(node: ReturnType<ReturnType<typeof load>>) {
   const next = node.next()
-  if (next.is(`${PARAGRAPH_SELECTOR},div`)) return next
-  return next.is('br') ? next.next(`${PARAGRAPH_SELECTOR},div`).first() : next
+  const captionSelector = `${PARAGRAPH_SELECTOR},div`
+  return next.is('br') ? next.next(captionSelector).first() : next.filter(captionSelector)
 }
 
 function isHttpsUrl(value: string): boolean {

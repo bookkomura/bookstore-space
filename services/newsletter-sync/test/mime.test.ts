@@ -115,6 +115,17 @@ describe('parseNewsletterMime', () => {
     expect(JSON.stringify(parsed.blocks)).not.toContain('<')
   })
 
+  it('does not treat a non-paragraph sibling as an image caption', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<img src="cid:photo-1" alt="山景"><span>不是圖片說明</span><p>後續段落</p>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'image', cid: 'photo-1', alt: '山景' },
+      { type: 'paragraph', text: '後續段落' },
+    ])
+  })
+
   it('rejects unreadable body data and a missing or malformed Message-ID', async () => {
     await expect(parseNewsletterMime('not-a-message')).rejects.toThrow('Message-ID')
     await expect(parseNewsletterMime(rawMime('<p>內容</p>', 'not-an-rfc-message-id'))).rejects.toThrow(
