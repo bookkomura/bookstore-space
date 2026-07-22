@@ -31,10 +31,10 @@ describe('parseNewsletterMime', () => {
     expect(parsed).toMatchObject({
       from: 'info.rewildesign@gmail.com',
       subject: '小村碎碎念～總是會到',
-      gmailMessageId: '<CANgcQthZCAmY9kvPBT4PY-j5L8qgE-oNpYkxf8qY_sMP78iUgQ@mail.gmail.com>',
       sentAt: '2026-07-19T05:40:25.000Z',
     })
-    expect(parsed?.messageId).toMatch(/^<[^<>\s]+@[^<>\s]+>$/)
+    expect(parsed.messageId).toMatch(/^<[^<>\s]+@[^<>\s]+>$/)
+    expect(parsed).not.toHaveProperty('gmailMessageId')
     expect([...parsed.attachmentsByCid.keys()]).toEqual([
       'ii_mrrbokpd0',
       'ii_mrrbxm7k1',
@@ -50,6 +50,28 @@ describe('parseNewsletterMime', () => {
     const links = parsed.blocks.filter((block) => block.type === 'link')
     expect(links.length).toBeGreaterThan(0)
     expect(links.every((block) => new URL(block.href).protocol === 'https:')).toBe(true)
+  })
+
+  it('keeps fixture paragraphs before the CID images in source order', async () => {
+    const parsed = await parseNewsletterMime(await fixtureRaw())
+    const expectedCids = ['ii_mrrbokpd0', 'ii_mrrbxm7k1', 'ii_mrrc4xt92', 'ii_mrrca4t33']
+    const firstParagraphIndex = parsed.blocks.findIndex(
+      (block) => block.type === 'paragraph' && block.text.length > 0,
+    )
+    const imageIndexes = expectedCids.map((cid) =>
+      parsed.blocks.findIndex((block) => block.type === 'image' && block.cid === cid),
+    )
+
+    expect(firstParagraphIndex).toBeGreaterThanOrEqual(0)
+    expect(firstParagraphIndex).toBeLessThan(imageIndexes[0])
+    expect(imageIndexes).toEqual([...imageIndexes].sort((left, right) => left - right))
+    for (const index of imageIndexes) expect(index).toBeGreaterThan(firstParagraphIndex)
+
+    for (const block of parsed.blocks) {
+      if (block.type === 'image' && block.caption) {
+        expect(parsed.blocks.indexOf(block)).toBeGreaterThanOrEqual(firstParagraphIndex)
+      }
+    }
   })
 
   it('preserves paragraph, image, caption, divider, and link order without emitting HTML', async () => {
@@ -73,6 +95,7 @@ describe('parseNewsletterMime', () => {
     await expect(parseNewsletterMime(rawMime('<p>內容</p>', 'not-an-rfc-message-id'))).rejects.toThrow(
       'Message-ID',
     )
+    await expect(parseNewsletterMime(rawMime(''))).rejects.toThrow('readable newsletter body')
   })
 
   it('drops non-HTTPS anchors', async () => {
@@ -81,5 +104,13 @@ describe('parseNewsletterMime', () => {
     )
 
     expect(parsed.blocks).toEqual([{ type: 'paragraph', text: '安全內容' }])
+  })
+
+  it('drops script, style, and noscript content from paragraphs', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<p>安全文字<script>window.alert("x")</script><style>.hidden { display: none }</style><noscript>替代文字</noscript></p>'),
+    )
+
+    expect(parsed.blocks).toEqual([{ type: 'paragraph', text: '安全文字' }])
   })
 })

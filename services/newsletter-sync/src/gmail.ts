@@ -10,6 +10,7 @@ export interface GmailMessageRef {
 }
 
 export interface GmailGateway {
+  /** Returns raw refs; callers parse and apply sender/subject eligibility before syncing. */
   fetchHistorySince(startHistoryId: string): Promise<GmailMessageRef[]>
 }
 

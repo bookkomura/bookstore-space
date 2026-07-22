@@ -9,7 +9,6 @@ export type ParsedBlock =
 
 export interface ParsedNewsletter {
   messageId: string
-  gmailMessageId: string
   sentAt: string
   subject: string
   from: string
@@ -52,9 +51,10 @@ export async function parseNewsletterMime(raw: string): Promise<ParsedNewsletter
     }
   }
 
+  if (blocks.length === 0) throw new Error('A readable newsletter body with blocks is required')
+
   return {
     messageId,
-    gmailMessageId: messageId,
     sentAt,
     subject,
     from,
@@ -67,17 +67,18 @@ function parseHtmlBlocks(html: string): ParsedBlock[] {
   if (!html) return []
 
   const $ = load(html)
+  $('script,style,noscript').remove()
   const captionElements = new Set<unknown>()
   const blocks: ParsedBlock[] = []
 
-  $(`${PARAGRAPH_SELECTOR},img[src^="cid:"],a[href],hr`).each((_, element) => {
+  $(`${PARAGRAPH_SELECTOR},div,img[src^="cid:"],a[href],hr`).each((_, element) => {
     if (captionElements.has(element)) return
     const node = $(element)
 
     if (element.tagName === 'img') {
       const cid = normalizeCid(node.attr('src')?.slice('cid:'.length))
       if (!cid) return
-      const captionNode = node.next(PARAGRAPH_SELECTOR).first()
+      const captionNode = node.next(`${PARAGRAPH_SELECTOR},div`).first()
       const caption = captionNode.length === 1 ? normalizeText(captionNode.text()) : ''
       if (caption) captionElements.add(captionNode.get(0))
       blocks.push({
@@ -101,11 +102,18 @@ function parseHtmlBlocks(html: string): ParsedBlock[] {
       return
     }
 
-    const text = normalizeText(node.text())
+    const text = normalizeText(element.tagName === 'div' ? directText(node) : node.text())
     if (text) blocks.push({ type: 'paragraph', text })
   })
 
   return blocks
+}
+
+function directText(node: ReturnType<ReturnType<typeof load>>): string {
+  return node
+    .contents()
+    .filter((_, child) => child.type === 'text')
+    .text()
 }
 
 function isHttpsUrl(value: string): boolean {
