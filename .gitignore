@@ -1,7 +1,11 @@
 node_modules/
 dist/
+.env
+.env.*
+!.env.example
 public/assets/
 public/content.json
 test-results/
 playwright-report/
 .worktrees/
+services/newsletter-sync/coverage/
