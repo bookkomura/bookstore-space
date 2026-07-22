@@ -1,0 +1,85 @@
+import { readFile } from 'node:fs/promises'
+
+import { describe, expect, it } from 'vitest'
+
+import { parseNewsletterMime } from '../src/mime.js'
+const fixturePath = new URL('./fixtures/newsletter.eml', import.meta.url)
+
+async function fixtureRaw(): Promise<string> {
+  return (await readFile(fixturePath)).toString('base64url')
+}
+
+function rawMime(html: string, messageId = '<newsletter@example.test>'): string {
+  return Buffer.from(
+    [
+      'From: info.rewildesign@gmail.com',
+      'To: reader@example.test',
+      'Subject: 小村碎碎念測試',
+      `Message-ID: ${messageId}`,
+      'Date: Sat, 19 Jul 2026 05:40:25 +0000',
+      'Content-Type: text/html; charset=utf-8',
+      '',
+      html,
+    ].join('\r\n'),
+  ).toString('base64url')
+}
+
+describe('parseNewsletterMime', () => {
+  it('retains safe fixture metadata, four CID attachments, and only HTTPS action links', async () => {
+    const parsed = await parseNewsletterMime(await fixtureRaw())
+
+    expect(parsed).toMatchObject({
+      from: 'info.rewildesign@gmail.com',
+      subject: '小村碎碎念～總是會到',
+      gmailMessageId: '<CANgcQthZCAmY9kvPBT4PY-j5L8qgE-oNpYkxf8qY_sMP78iUgQ@mail.gmail.com>',
+      sentAt: '2026-07-19T05:40:25.000Z',
+    })
+    expect(parsed?.messageId).toMatch(/^<[^<>\s]+@[^<>\s]+>$/)
+    expect([...parsed.attachmentsByCid.keys()]).toEqual([
+      'ii_mrrbokpd0',
+      'ii_mrrbxm7k1',
+      'ii_mrrc4xt92',
+      'ii_mrrca4t33',
+    ])
+    expect(parsed.blocks.filter((block) => block.type === 'image').map((block) => block.cid)).toEqual([
+      'ii_mrrbokpd0',
+      'ii_mrrbxm7k1',
+      'ii_mrrc4xt92',
+      'ii_mrrca4t33',
+    ])
+    const links = parsed.blocks.filter((block) => block.type === 'link')
+    expect(links.length).toBeGreaterThan(0)
+    expect(links.every((block) => new URL(block.href).protocol === 'https:')).toBe(true)
+  })
+
+  it('preserves paragraph, image, caption, divider, and link order without emitting HTML', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime(
+        '<p>前言</p><img src="cid:photo-1" alt="山景"><p>圖片說明</p><hr><a href="https://example.test/action">行動連結</a>',
+      ),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '前言' },
+      { type: 'image', cid: 'photo-1', alt: '山景', caption: '圖片說明' },
+      { type: 'divider' },
+      { type: 'link', label: '行動連結', href: 'https://example.test/action' },
+    ])
+    expect(JSON.stringify(parsed.blocks)).not.toContain('<')
+  })
+
+  it('rejects unreadable body data and a missing or malformed Message-ID', async () => {
+    await expect(parseNewsletterMime('not-a-message')).rejects.toThrow('Message-ID')
+    await expect(parseNewsletterMime(rawMime('<p>內容</p>', 'not-an-rfc-message-id'))).rejects.toThrow(
+      'Message-ID',
+    )
+  })
+
+  it('drops non-HTTPS anchors', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<p>安全內容</p><a href="http://example.test/insecure">不安全</a>'),
+    )
+
+    expect(parsed.blocks).toEqual([{ type: 'paragraph', text: '安全內容' }])
+  })
+})
