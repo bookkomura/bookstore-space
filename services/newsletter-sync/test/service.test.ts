@@ -22,8 +22,14 @@ function createDependencies() {
       markFailed: vi.fn().mockResolvedValue(undefined),
       getCursor: vi.fn().mockResolvedValue('old-history'),
       setCursor: vi.fn().mockResolvedValue(undefined),
-      getPendingDeploy: vi.fn().mockResolvedValue({ storyId: 99, publicationKey: 'publication-key' }),
-      markDeployComplete: vi.fn().mockResolvedValue(undefined),
+      markDeployComplete: vi.fn().mockResolvedValue('marked'),
+      claimPendingDeploy: vi.fn().mockResolvedValue({
+        status: 'claimed',
+        publicationKey: 'publication-key',
+        storyId: 99,
+        leaseToken: 'deploy-lease-1',
+      }),
+      releasePendingDeploy: vi.fn().mockResolvedValue('marked'),
     },
     publisher: { publish: vi.fn().mockResolvedValue({ storyId: 99 }) },
     deployHook: vi.fn().mockResolvedValue(undefined),
@@ -99,6 +105,32 @@ describe('NewsletterSyncService', () => {
     })
   })
 
+  it('fences deploy completion to its holder and lets an expired deploy lease be reclaimed', async () => {
+    const { firestore } = createInMemoryFirestore()
+    let currentTime = new Date('2026-07-19T00:00:00.000Z')
+    let token = 0
+    const repository = createFirestoreSyncRepository(
+      firestore as never,
+      () => currentTime,
+      () => `opaque-${++token}`,
+    )
+    const publication = await repository.claim(message.messageId, message.gmailMessageId)
+    if (publication.status !== 'claimed') throw new Error('expected a publication lease claim')
+    await repository.markPublished(message.messageId, publication.leaseToken, 99)
+
+    const first = await repository.claimPendingDeploy(publication.publicationKey, 99)
+    expect(first.status).toBe('claimed')
+    if (first.status !== 'claimed') throw new Error('expected a deploy lease claim')
+    await expect(repository.markDeployComplete(publication.publicationKey, 99, 'other-lease')).resolves.toBe('stale')
+    await expect(repository.releasePendingDeploy(publication.publicationKey, 99, 'other-lease')).resolves.toBe('stale')
+
+    currentTime = new Date(currentTime.getTime() + 10 * 60 * 1000 + 1)
+    const reclaimed = await repository.claimPendingDeploy(publication.publicationKey, 99)
+    expect(reclaimed.status).toBe('claimed')
+    if (reclaimed.status !== 'claimed') throw new Error('expected an expired deploy lease to be reclaimed')
+    await expect(repository.markDeployComplete(publication.publicationKey, 99, reclaimed.leaseToken)).resolves.toBe('marked')
+  })
+
   it('rejects a stale lease token after the lease expires, even before another worker reclaims it', async () => {
     const { firestore } = createInMemoryFirestore()
     let currentTime = new Date('2026-07-19T00:00:00.000Z')
@@ -119,7 +151,9 @@ describe('NewsletterSyncService', () => {
   it('publishes a Message-ID once even when delivery repeats', async () => {
     const { repository, publisher, deployHook } = createDependencies()
     repository.claim.mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' }).mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
-    repository.getPendingDeploy.mockResolvedValueOnce({ storyId: 99, publicationKey: 'publication-key' }).mockResolvedValueOnce(null)
+    repository.claimPendingDeploy.mockResolvedValueOnce({
+      status: 'claimed', publicationKey: 'publication-key', storyId: 99, leaseToken: 'deploy-lease-1',
+    }).mockResolvedValueOnce({ status: 'complete' })
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
     await service.process(message)
@@ -128,6 +162,23 @@ describe('NewsletterSyncService', () => {
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(repository.markPublished).toHaveBeenCalledWith(message.messageId, 'lease-1', 99)
     expect(deployHook).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls the deploy hook once when parallel duplicate deliveries drain the same outbox', async () => {
+    const { repository, publisher, deployHook } = createDependencies()
+    repository.claim
+      .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' })
+      .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
+    repository.claimPendingDeploy
+      .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', storyId: 99, leaseToken: 'deploy-lease-1' })
+      .mockResolvedValueOnce({ status: 'in_progress' })
+    const service = new NewsletterSyncService({ repository, publisher, deployHook })
+
+    await Promise.all([service.process(message), service.process(message)])
+
+    expect(publisher.publish).toHaveBeenCalledTimes(1)
+    expect(deployHook).toHaveBeenCalledTimes(1)
+    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99, 'deploy-lease-1')
   })
 
   it('does not deploy a failed asset upload and records a retryable failure', async () => {
@@ -163,7 +214,9 @@ describe('NewsletterSyncService', () => {
       .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
       .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
     deployHook.mockRejectedValueOnce(new Error('deploy unavailable')).mockResolvedValueOnce(undefined)
-    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{ gmailMessageId: 'eligible', raw: 'eligible-raw', labelIds: ['INBOX'] }]) }
+    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{
+      gmailMessageId: 'eligible', raw: 'eligible-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'],
+    }]) }
     const parseNewsletter = vi.fn().mockResolvedValue(message)
     const service = new NewsletterSyncService({ repository, publisher, deployHook, gateway, parseNewsletter })
 
@@ -173,7 +226,7 @@ describe('NewsletterSyncService', () => {
     await expect(service.process(message)).resolves.toBe('duplicate')
 
     expect(publisher.publish).not.toHaveBeenCalled()
-    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99)
+    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99, 'deploy-lease-1')
   })
 
   it('exposes a deploy-hook failure from retryDeploy and leaves the outbox pending', async () => {
@@ -190,9 +243,9 @@ describe('NewsletterSyncService', () => {
     repository.claim
       .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' })
       .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
-    repository.getPendingDeploy
+    repository.claimPendingDeploy
       .mockRejectedValueOnce(new Error('worker interrupted before hook'))
-      .mockResolvedValueOnce({ storyId: 99, publicationKey: 'publication-key' })
+      .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', storyId: 99, leaseToken: 'deploy-lease-1' })
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
     await expect(service.process(message)).rejects.toThrow('worker interrupted before hook')
@@ -200,15 +253,27 @@ describe('NewsletterSyncService', () => {
 
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(deployHook).toHaveBeenCalledTimes(1)
-    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99)
+    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99, 'deploy-lease-1')
   })
 
-  it('parses raw Gmail refs, filters ineligible mail, and advances the cursor after successful history sync', async () => {
+  it('skips malformed ineligible Gmail history refs before MIME parsing and advances the cursor', async () => {
     const { repository, publisher, deployHook } = createDependencies()
     const gateway = {
       fetchHistorySince: vi.fn().mockResolvedValue([
-        { gmailMessageId: 'eligible', raw: 'eligible-raw', labelIds: ['INBOX'] },
-        { gmailMessageId: 'not-inbox', raw: 'not-inbox-raw', labelIds: ['UNREAD'] },
+        {
+          gmailMessageId: 'eligible',
+          raw: 'eligible-raw',
+          from: 'info.rewildesign@gmail.com',
+          subject: '小村碎碎念～總是會到',
+          labelIds: ['INBOX'],
+        },
+        {
+          gmailMessageId: 'not-inbox',
+          raw: 'malformed-ineligible-raw',
+          from: 'other@example.com',
+          subject: 'not a newsletter',
+          labelIds: ['UNREAD'],
+        },
       ]),
     }
     const parseNewsletter = vi.fn().mockResolvedValue(message)
@@ -217,7 +282,7 @@ describe('NewsletterSyncService', () => {
     await expect(service.syncHistory('new-history')).resolves.toEqual({ examined: 2, published: 1, duplicates: 0 })
 
     expect(parseNewsletter).toHaveBeenCalledWith('eligible-raw')
-    expect(parseNewsletter).toHaveBeenCalledWith('not-inbox-raw')
+    expect(parseNewsletter).not.toHaveBeenCalledWith('malformed-ineligible-raw')
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(repository.setCursor).toHaveBeenCalledWith('new-history')
   })
@@ -272,7 +337,9 @@ describe('NewsletterSyncService', () => {
   it('does not advance the cursor when a live owner lease is in progress', async () => {
     const { repository, publisher, deployHook } = createDependencies()
     repository.claim.mockResolvedValueOnce({ status: 'in_progress' })
-    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{ gmailMessageId: 'eligible', raw: 'eligible-raw', labelIds: ['INBOX'] }]) }
+    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{
+      gmailMessageId: 'eligible', raw: 'eligible-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'],
+    }]) }
     const parseNewsletter = vi.fn().mockResolvedValue(message)
     const service = new NewsletterSyncService({ repository, publisher, deployHook, gateway, parseNewsletter })
 

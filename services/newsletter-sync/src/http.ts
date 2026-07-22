@@ -2,7 +2,7 @@ import { randomUUID, timingSafeEqual } from 'node:crypto'
 
 import express, { type Express, type Request } from 'express'
 
-import { HistoryCursorExpiredError, type GmailGateway } from './gmail.js'
+import { HistoryCursorExpiredError, isEligibleMessage, type GmailGateway } from './gmail.js'
 import { parseNewsletterMime } from './mime.js'
 import type { WatchState } from './repository.js'
 import type { NewsletterDelivery, NewsletterSyncService, SyncResult } from './service.js'
@@ -96,6 +96,7 @@ export function createHttpApp(dependencies: HttpDependencies): Express {
         if (!(error instanceof HistoryCursorExpiredError)) throw error
         const messages = await dependencies.gateway.findRecentInbox(30)
         for (const message of messages) {
+          if (!isEligibleMessage(message)) continue
           const parsed = await parseNewsletter(message.raw)
           await dependencies.service.process({ ...parsed, gmailMessageId: message.gmailMessageId, labelIds: message.labelIds })
         }

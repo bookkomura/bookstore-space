@@ -19,6 +19,8 @@ The IAM model is intentionally separated:
 | Gmail API push service account (`gmail-api-push@system.gserviceaccount.com`) | Pub/Sub publisher on the Gmail watch topic only, so Gmail can establish and publish watch notifications. |
 | Google-managed Pub/Sub and Scheduler agents | Token-creation permission only for their respective caller service accounts. |
 
+The Terraform deployer also needs `iam.serviceAccounts.actAs`, normally via `roles/iam.serviceAccountUser`, scoped to the four service accounts this module attaches to Cloud Run, Pub/Sub, and Scheduler: `newsletter-sync-runtime`, `newsletter-sync-renew-watch`, `newsletter-sync-pubsub-push`, and `newsletter-sync-scheduler`. This prerequisite is for the deployment identity only; it does not grant those runtime identities broader permissions.
+
 Pub/Sub pushes to `POST /pubsub/gmail` with an OIDC token whose audience is the deployed service URL. No `allUsers` Cloud Run IAM binding is created. The renewal Job gets an identity token from Cloud Run metadata and places it in `X-Serverless-Authorization`; Cloud Run consumes that header for IAM while the service still receives the exact bearer header it already requires at `POST /tasks/renew-watch`.
 
 ## Inputs
@@ -101,8 +103,22 @@ terraform validate
 
 After the first full apply has created the Cloud Run service, run:
 
+Cloud Run service:
+
 ```sh
 gcloud run services get-iam-policy newsletter-sync --region=REGION
 ```
 
-Confirm the policy grants `roles/run.invoker` only to the Pub/Sub push and renewal Job service accounts, confirms the Job invokes through the scheduler account, and does not add a public invoker. Also confirm the Gmail API push service account has `roles/pubsub.publisher` on the Gmail watch topic. Exercise Pub/Sub delivery only through an approved non-production verification procedure.
+Cloud Run Job:
+
+```sh
+gcloud run jobs get-iam-policy newsletter-sync-renew-watch --region=REGION
+```
+
+Gmail Pub/Sub topic:
+
+```sh
+gcloud pubsub topics get-iam-policy gmail-newsletter-events --project=PROJECT_ID
+```
+
+Confirm the service policy grants `roles/run.invoker` only to the Pub/Sub push and renewal Job service accounts and does not add a public invoker. Confirm the Job policy grants `roles/run.invoker` to the scheduler account. Confirm the topic policy grants `roles/pubsub.publisher` to the Gmail API push service account. Exercise Pub/Sub delivery only through an approved non-production verification procedure.

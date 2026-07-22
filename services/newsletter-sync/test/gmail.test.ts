@@ -27,7 +27,7 @@ describe('isEligibleMessage', () => {
 })
 
 describe('createGmailGateway', () => {
-  it('pages added messages, deduplicates ids, and returns raw Inbox refs', async () => {
+  it('pages added messages, filters their metadata, and downloads raw MIME only for eligible Inbox refs', async () => {
     const list = vi
       .fn()
       .mockResolvedValueOnce({
@@ -42,17 +42,34 @@ describe('createGmailGateway', () => {
       .mockResolvedValueOnce({
         data: { history: [{ messagesAdded: [{ message: { id: 'three' } }] }] },
       })
-    const get = vi.fn(async ({ id }: { id: string }) => ({
-      data: { raw: `${id}-raw`, labelIds: ['INBOX'] },
-    }))
+    const get = vi.fn(async ({ id, format }: { id: string; format: string }) => {
+      if (format === 'metadata') {
+        const metadata = {
+          one: { from: 'info.rewildesign@gmail.com', subject: '小村碎碎念～總是會到', labelIds: ['INBOX'] },
+          two: { from: 'other@example.com', subject: '小村碎碎念～總是會到', labelIds: ['INBOX'] },
+          three: { from: 'info.rewildesign@gmail.com', subject: 'not a newsletter', labelIds: ['INBOX'] },
+        }[id]
+        return {
+          data: {
+            labelIds: metadata.labelIds,
+            payload: { headers: [{ name: 'From', value: metadata.from }, { name: 'Subject', value: metadata.subject }] },
+          },
+        }
+      }
+      return { data: { raw: `${id}-raw`, labelIds: ['INBOX'] } }
+    })
     const client = { users: { history: { list }, messages: { get } } }
 
     const gateway = createGmailGateway(client as never, 'mailbox@example.com')
 
     await expect(gateway.fetchHistorySince('456')).resolves.toEqual([
-      { gmailMessageId: 'one', raw: 'one-raw', labelIds: ['INBOX'] },
-      { gmailMessageId: 'two', raw: 'two-raw', labelIds: ['INBOX'] },
-      { gmailMessageId: 'three', raw: 'three-raw', labelIds: ['INBOX'] },
+      {
+        gmailMessageId: 'one',
+        raw: 'one-raw',
+        from: 'info.rewildesign@gmail.com',
+        subject: '小村碎碎念～總是會到',
+        labelIds: ['INBOX'],
+      },
     ])
     expect(list).toHaveBeenNthCalledWith(1, {
       userId: 'mailbox@example.com',
@@ -65,8 +82,15 @@ describe('createGmailGateway', () => {
       historyTypes: ['messageAdded'],
       pageToken: 'next-page',
     })
-    expect(get).toHaveBeenCalledTimes(3)
+    expect(get).toHaveBeenCalledTimes(4)
+    expect(get).toHaveBeenCalledWith({
+      userId: 'mailbox@example.com',
+      id: 'one',
+      format: 'metadata',
+      metadataHeaders: ['From', 'Subject'],
+    })
     expect(get).toHaveBeenCalledWith({ userId: 'mailbox@example.com', id: 'one', format: 'raw' })
+    expect(get).not.toHaveBeenCalledWith({ userId: 'mailbox@example.com', id: 'two', format: 'raw' })
   })
 
   it('maps an expired Gmail history cursor to a dedicated error', async () => {
@@ -97,19 +121,27 @@ describe('createGmailGateway', () => {
       .fn()
       .mockResolvedValueOnce({ data: { messages: [{ id: 'newer' }], nextPageToken: 'next-page' } })
       .mockResolvedValueOnce({ data: { messages: [{ id: 'older' }] } })
-    const get = vi.fn(async ({ id }: { id: string }) => ({
-      data: {
-        raw: `${id}-raw`,
-        labelIds: ['INBOX'],
-        internalDate: id === 'older' ? '100' : '200',
-      },
-    }))
+    const get = vi.fn(async ({ id, format }: { id: string; format: string }) => {
+      if (format === 'metadata') {
+        return {
+          data: {
+            labelIds: ['INBOX'],
+            internalDate: id === 'older' ? '100' : '200',
+            payload: { headers: [
+              { name: 'From', value: 'info.rewildesign@gmail.com' },
+              { name: 'Subject', value: '小村碎碎念～總是會到' },
+            ] },
+          },
+        }
+      }
+      return { data: { raw: `${id}-raw` } }
+    })
     const client = { users: { messages: { list, get } } }
     const gateway = createGmailGateway(client as never, 'mailbox@example.com')
 
     await expect(gateway.findRecentInbox(30)).resolves.toEqual([
-      { gmailMessageId: 'older', raw: 'older-raw', labelIds: ['INBOX'] },
-      { gmailMessageId: 'newer', raw: 'newer-raw', labelIds: ['INBOX'] },
+      { gmailMessageId: 'older', raw: 'older-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念～總是會到', labelIds: ['INBOX'] },
+      { gmailMessageId: 'newer', raw: 'newer-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念～總是會到', labelIds: ['INBOX'] },
     ])
     expect(list).toHaveBeenNthCalledWith(1, {
       userId: 'mailbox@example.com',

@@ -68,6 +68,7 @@ export class NewsletterSyncService {
     const references = await gateway.fetchHistorySince(cursor)
     const result: SyncResult = { examined: references.length, published: 0, duplicates: 0 }
     for (const reference of references) {
+      if (!isEligibleMessage(reference)) continue
       const parsed = await this.parseNewsletter(reference.raw)
       const outcome = await this.process({ ...parsed, gmailMessageId: reference.gmailMessageId, labelIds: reference.labelIds })
       if (outcome === 'published') result.published += 1
@@ -82,11 +83,17 @@ export class NewsletterSyncService {
   }
 
   private async drainDeployOutbox(publicationKey: string, storyId: number): Promise<void> {
-    const pending = await this.dependencies.repository.getPendingDeploy(publicationKey)
-    if (!pending) return
-    if (pending.storyId !== storyId) throw new Error('Deploy outbox story does not match the published story')
-    await this.dependencies.deployHook()
-    await this.dependencies.repository.markDeployComplete(publicationKey, storyId)
+    const claim = await this.dependencies.repository.claimPendingDeploy(publicationKey, storyId)
+    if (claim.status === 'complete' || claim.status === 'in_progress') return
+    if (claim.status === 'invalid') throw new Error('Deploy outbox story does not match the published story')
+    try {
+      await this.dependencies.deployHook()
+    } catch (error) {
+      await this.dependencies.repository.releasePendingDeploy(publicationKey, storyId, claim.leaseToken)
+      throw error
+    }
+    const result = await this.dependencies.repository.markDeployComplete(publicationKey, storyId, claim.leaseToken)
+    if (result !== 'marked') throw new Error('Deploy outbox lease was lost before it could be completed')
   }
 }
 

@@ -107,8 +107,8 @@ describe('createHttpApp', () => {
     const dependencies = createDependencies()
     dependencies.service.syncHistory.mockRejectedValueOnce(new HistoryCursorExpiredError())
     dependencies.gateway.findRecentInbox.mockResolvedValueOnce([
-      { gmailMessageId: 'first', raw: 'first-raw', labelIds: ['INBOX'] },
-      { gmailMessageId: 'second', raw: 'second-raw', labelIds: ['INBOX'] },
+      { gmailMessageId: 'first', raw: 'first-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'] },
+      { gmailMessageId: 'second', raw: 'second-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'] },
     ])
     dependencies.parseNewsletter
       .mockResolvedValueOnce({ messageId: '<first>', gmailMessageId: 'parsed-first', labelIds: [] })
@@ -149,8 +149,8 @@ describe('createHttpApp', () => {
     const dependencies = createDependencies()
     dependencies.service.syncHistory.mockRejectedValueOnce(new HistoryCursorExpiredError())
     dependencies.gateway.findRecentInbox.mockResolvedValueOnce([
-      { gmailMessageId: 'first', raw: 'first-raw', labelIds: ['INBOX'] },
-      { gmailMessageId: 'second', raw: 'second-raw', labelIds: ['INBOX'] },
+      { gmailMessageId: 'first', raw: 'first-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'] },
+      { gmailMessageId: 'second', raw: 'second-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'] },
     ])
     dependencies.parseNewsletter.mockResolvedValue({ messageId: '<message>', gmailMessageId: 'parsed', labelIds: [] })
     dependencies.service.process.mockRejectedValueOnce(new Error('temporary publish failure'))

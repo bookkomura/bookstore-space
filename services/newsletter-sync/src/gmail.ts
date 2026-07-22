@@ -7,6 +7,8 @@ const RECENT_INBOX_MESSAGE_LIMIT = 100
 export interface GmailMessageRef {
   gmailMessageId: string
   raw: string
+  from: string
+  subject: string
   labelIds: readonly string[]
 }
 
@@ -76,16 +78,8 @@ export function createGmailGateway(client: gmail_v1.Gmail, userId = 'me'): Gmail
         throw error
       }
 
-      const messages: GmailMessageRef[] = []
-      for (const gmailMessageId of messageIds) {
-        const response = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
-        messages.push({
-          gmailMessageId,
-          raw: response.data.raw ?? '',
-          labelIds: response.data.labelIds ?? [],
-        })
-      }
-      return messages
+      const messages = await fetchEligibleMessages(client, userId, messageIds)
+      return messages.map(({ internalDate: _internalDate, ...message }) => message)
     },
 
     async renewInboxWatch(topicName) {
@@ -114,21 +108,50 @@ export function createGmailGateway(client: gmail_v1.Gmail, userId = 'me'): Gmail
         pageToken = response.data.nextPageToken ?? undefined
       } while (pageToken)
 
-      const messages = []
-      for (const gmailMessageId of messageIds) {
-        const response = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
-        messages.push({
-          gmailMessageId,
-          raw: response.data.raw ?? '',
-          labelIds: response.data.labelIds ?? [],
-          internalDate: Number(response.data.internalDate ?? 0),
-        })
-      }
+      const messages = await fetchEligibleMessages(client, userId, messageIds)
       return messages
         .sort((left, right) => left.internalDate - right.internalDate)
         .map(({ internalDate: _internalDate, ...message }) => message)
     },
   }
+}
+
+async function fetchEligibleMessages(
+  client: gmail_v1.Gmail,
+  userId: string,
+  messageIds: Iterable<string>,
+): Promise<Array<GmailMessageRef & { internalDate: number }>> {
+  const messages: Array<GmailMessageRef & { internalDate: number }> = []
+  for (const gmailMessageId of messageIds) {
+    const metadata = await client.users.messages.get({
+      userId,
+      id: gmailMessageId,
+      format: 'metadata',
+      metadataHeaders: ['From', 'Subject'],
+    })
+    const from = headerValue(metadata.data.payload?.headers, 'From')
+    const subject = headerValue(metadata.data.payload?.headers, 'Subject')
+    const labelIds = metadata.data.labelIds ?? []
+    if (!isEligibleMessage({ from, subject, labelIds })) continue
+
+    const raw = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
+    messages.push({
+      gmailMessageId,
+      raw: raw.data.raw ?? '',
+      from,
+      subject,
+      labelIds,
+      internalDate: Number(metadata.data.internalDate ?? 0),
+    })
+  }
+  return messages
+}
+
+function headerValue(headers: gmail_v1.Schema$MessagePartHeader[] | null | undefined, name: string): string {
+  const value = headers?.find((header) => header.name?.toLowerCase() === name.toLowerCase())?.value?.trim() ?? ''
+  if (name.toLowerCase() !== 'from') return value
+  const bracketedAddress = value.match(/<([^<>\s]+)>/)?.[1]
+  return bracketedAddress ?? value
 }
 
 function isHistoryNotFound(error: unknown): boolean {

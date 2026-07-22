@@ -73,3 +73,20 @@ Moved `gcloud run services get-iam-policy` out of pre-apply review and into an e
 - Firestore's `(default)` database may be a one-time project resource. Operators must confirm it does not already exist before a first apply, or import it into state if it does.
 - Image-registry reader IAM is intentionally outside this module because registry ownership varies; operators must grant the Cloud Run service agent access when using a private registry.
 - Terraform creates only secret containers and IAM. All secret versions remain an out-of-band operator responsibility and no values are present in source or state configuration.
+
+## Final branch review fixes
+
+### RED/GREEN
+
+- RED: `npm test -- test/service.test.ts test/gmail.test.ts` failed as intended: metadata filtering still returned and downloaded every history message, parallel duplicate deliveries invoked the deploy hook twice, and an ineligible malformed history ref reached strict MIME parsing. The repository lease regression also initially failed because `claimPendingDeploy` did not exist.
+- GREEN: added Firestore transaction-backed deploy claims with opaque lease tokens and expiry/reclaim behavior. Only the active token can complete or release the outbox claim; deploy-hook failures release that claim and preserve the existing cursor retry semantics. Gmail now fetches `From`/`Subject` metadata and Inbox labels before raw MIME, and the service rechecks that metadata before strict parsing. Malformed eligible mail remains retryable.
+- Documentation now gives separate post-apply IAM checks for the Cloud Run service, Cloud Run Job, and Gmail Pub/Sub topic, and scopes the deployer's `iam.serviceAccounts.actAs` prerequisite to the four attached service accounts.
+
+### Verification results
+
+| Command | Result |
+| --- | --- |
+| `npm test -- test/service.test.ts test/gmail.test.ts test/http.test.ts` | Passed outside the sandbox: 3 files, 38 tests. The sandbox attempt failed only because Supertest could not bind `0.0.0.0` (`listen EPERM: operation not permitted`). |
+| `npm test` | Passed outside the sandbox: 7 files, 68 tests. |
+| `npm run build` | Passed: `tsc -p tsconfig.json`. |
+| `git diff --check` | Passed with no whitespace errors. |

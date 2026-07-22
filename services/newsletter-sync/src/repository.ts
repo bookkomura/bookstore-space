@@ -9,10 +9,11 @@ export type ClaimResult =
 
 export type MarkResult = 'marked' | 'stale'
 
-export interface PendingDeploy {
-  storyId: number
-  publicationKey: string
-}
+export type DeployClaimResult =
+  | { status: 'claimed'; publicationKey: string; storyId: number; leaseToken: string }
+  | { status: 'complete' }
+  | { status: 'in_progress' }
+  | { status: 'invalid' }
 
 export interface WatchState {
   historyId: string
@@ -27,8 +28,9 @@ export interface SyncRepository {
   setCursor(historyId: string): Promise<void>
   getWatch(): Promise<WatchState | null>
   setWatch(watch: WatchState): Promise<void>
-  getPendingDeploy(publicationKey: string): Promise<PendingDeploy | null>
-  markDeployComplete(publicationKey: string, storyId: number): Promise<void>
+  claimPendingDeploy(publicationKey: string, storyId: number): Promise<DeployClaimResult>
+  markDeployComplete(publicationKey: string, storyId: number, leaseToken: string): Promise<MarkResult>
+  releasePendingDeploy(publicationKey: string, storyId: number, leaseToken: string): Promise<MarkResult>
 }
 
 const PROCESSING_LEASE_MS = 10 * 60 * 1000
@@ -118,6 +120,8 @@ export function createFirestoreSyncRepository(
             publicationKey: data.publicationKey,
             storyId,
             status: 'pending',
+            deployLeaseToken: null,
+            deployLeaseExpiresAt: null,
             createdAt: currentTime,
             updatedAt: currentTime,
           },
@@ -190,29 +194,83 @@ export function createFirestoreSyncRepository(
       })
     },
 
-    async getPendingDeploy(publicationKey) {
-      const snapshot = await firestore.collection('newsletterDeployOutbox').doc(publicationKey).get()
-      const data = snapshot.data()
-      if (
-        data?.status !== 'pending' ||
-        data.publicationKey !== publicationKey ||
-        typeof data.storyId !== 'number'
-      ) {
-        return null
-      }
-      return { publicationKey, storyId: data.storyId }
-    },
-
-    async markDeployComplete(publicationKey, storyId) {
+    async claimPendingDeploy(publicationKey, storyId) {
       const outbox = firestore.collection('newsletterDeployOutbox').doc(publicationKey)
-      await firestore.runTransaction(async (transaction) => {
+      return firestore.runTransaction(async (transaction): Promise<DeployClaimResult> => {
         const snapshot = await transaction.get(outbox)
         const data = snapshot.data()
-        if (data?.status !== 'pending' || data.publicationKey !== publicationKey || data.storyId !== storyId) return
-        transaction.set(outbox, { status: 'complete', completedAt: now(), updatedAt: now() }, { merge: true })
+        if (data?.publicationKey !== publicationKey || data.storyId !== storyId) return { status: 'invalid' }
+        if (data.status === 'complete') return { status: 'complete' }
+
+        const currentTime = now()
+        const leaseExpiresAt = asDate(data.deployLeaseExpiresAt)
+        if (data.status === 'processing' && leaseExpiresAt !== null && leaseExpiresAt > currentTime) {
+          return { status: 'in_progress' }
+        }
+        if (data.status !== 'pending' && data.status !== 'processing') return { status: 'invalid' }
+
+        const leaseToken = opaqueToken()
+        transaction.set(
+          outbox,
+          {
+            status: 'processing',
+            deployLeaseToken: leaseToken,
+            deployLeaseExpiresAt: new Date(currentTime.getTime() + PROCESSING_LEASE_MS),
+            updatedAt: currentTime,
+          },
+          { merge: true },
+        )
+        return { status: 'claimed', publicationKey, storyId, leaseToken }
       })
     },
+
+    async markDeployComplete(publicationKey, storyId, leaseToken) {
+      return transitionDeployClaim(firestore, now, publicationKey, storyId, leaseToken, 'complete')
+    },
+
+    async releasePendingDeploy(publicationKey, storyId, leaseToken) {
+      return transitionDeployClaim(firestore, now, publicationKey, storyId, leaseToken, 'pending')
+    },
   }
+}
+
+async function transitionDeployClaim(
+  firestore: Firestore,
+  now: () => Date,
+  publicationKey: string,
+  storyId: number,
+  leaseToken: string,
+  status: 'complete' | 'pending',
+): Promise<MarkResult> {
+  const outbox = firestore.collection('newsletterDeployOutbox').doc(publicationKey)
+  return firestore.runTransaction(async (transaction): Promise<MarkResult> => {
+    const snapshot = await transaction.get(outbox)
+    const data = snapshot.data()
+    const currentTime = now()
+    const leaseExpiresAt = asDate(data?.deployLeaseExpiresAt)
+    if (
+      data?.status !== 'processing' ||
+      data.publicationKey !== publicationKey ||
+      data.storyId !== storyId ||
+      data.deployLeaseToken !== leaseToken ||
+      leaseExpiresAt === null ||
+      leaseExpiresAt <= currentTime
+    ) {
+      return 'stale'
+    }
+    transaction.set(
+      outbox,
+      {
+        status,
+        deployLeaseToken: null,
+        deployLeaseExpiresAt: null,
+        ...(status === 'complete' ? { completedAt: currentTime } : {}),
+        updatedAt: currentTime,
+      },
+      { merge: true },
+    )
+    return 'marked'
+  })
 }
 
 function compareHistoryIds(left: string, right: string): number {
