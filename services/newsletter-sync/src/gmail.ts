@@ -12,6 +12,13 @@ export interface GmailMessageRef {
 export interface GmailGateway {
   /** Returns raw refs; callers parse and apply sender/subject eligibility before syncing. */
   fetchHistorySince(startHistoryId: string): Promise<GmailMessageRef[]>
+  renewInboxWatch(topicName: string): Promise<GmailWatch>
+  findRecentInbox(days: number): Promise<GmailMessageRef[]>
+}
+
+export interface GmailWatch {
+  historyId: string
+  expiration: string
 }
 
 export class HistoryCursorExpiredError extends Error {
@@ -71,6 +78,47 @@ export function createGmailGateway(client: gmail_v1.Gmail, userId = 'me'): Gmail
         })
       }
       return messages
+    },
+
+    async renewInboxWatch(topicName) {
+      const response = await client.users.watch({
+        userId,
+        requestBody: { labelIds: ['INBOX'], topicName },
+      })
+      const { historyId, expiration } = response.data
+      if (typeof historyId !== 'string' || typeof expiration !== 'string') {
+        throw new Error('Gmail watch response did not include a cursor and expiration')
+      }
+      return { historyId, expiration }
+    },
+
+    async findRecentInbox(days) {
+      const messageIds = new Set<string>()
+      let pageToken: string | undefined
+      const q = `in:inbox from:${NEWSLETTER_SENDER} subject:${SUBJECT_NEEDLE} newer_than:${days}d`
+
+      do {
+        const response = await client.users.messages.list({ userId, q, ...(pageToken ? { pageToken } : {}) })
+        for (const message of response.data.messages ?? []) {
+          if (message.id) messageIds.add(message.id)
+        }
+        pageToken = response.data.nextPageToken ?? undefined
+      } while (pageToken)
+
+      const messages = await Promise.all(
+        [...messageIds].map(async (gmailMessageId) => {
+          const response = await client.users.messages.get({ userId, id: gmailMessageId, format: 'raw' })
+          return {
+            gmailMessageId,
+            raw: response.data.raw ?? '',
+            labelIds: response.data.labelIds ?? [],
+            internalDate: Number(response.data.internalDate ?? 0),
+          }
+        }),
+      )
+      return messages
+        .sort((left, right) => left.internalDate - right.internalDate)
+        .map(({ internalDate: _internalDate, ...message }) => message)
     },
   }
 }

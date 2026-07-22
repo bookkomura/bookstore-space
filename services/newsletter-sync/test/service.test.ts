@@ -55,6 +55,19 @@ function createInMemoryFirestore() {
 }
 
 describe('NewsletterSyncService', () => {
+  it('persists the Gmail watch cursor and expiration in private sync state', async () => {
+    const { firestore, documents } = createInMemoryFirestore()
+    const repository = createFirestoreSyncRepository(firestore as never, () => new Date('2026-07-19T00:00:00.000Z'))
+
+    await repository.setWatch({ historyId: '300', expiration: '1785542400000' })
+
+    await expect(repository.getWatch()).resolves.toEqual({ historyId: '300', expiration: '1785542400000' })
+    expect(documents.get('newsletterSyncState/cursor')).toMatchObject({
+      watchHistoryId: '300',
+      watchExpiration: '1785542400000',
+    })
+  })
+
   it('writes a pending deploy outbox record atomically with published state', async () => {
     const { firestore, documents } = createInMemoryFirestore()
     const repository = createFirestoreSyncRepository(firestore as never, () => new Date('2026-07-19T00:00:00.000Z'), () => 'opaque-key')

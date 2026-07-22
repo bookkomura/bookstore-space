@@ -76,4 +76,49 @@ describe('createGmailGateway', () => {
 
     await expect(gateway.fetchHistorySince('456')).rejects.toBeInstanceOf(HistoryCursorExpiredError)
   })
+
+  it('renews an Inbox-only watch on the provisioned topic', async () => {
+    const watch = vi.fn().mockResolvedValue({ data: { historyId: '300', expiration: '1785542400000' } })
+    const client = { users: { watch } }
+    const gateway = createGmailGateway(client as never, 'mailbox@example.com')
+
+    await expect(gateway.renewInboxWatch('projects/bookstore-space/topics/newsletter-sync')).resolves.toEqual({
+      historyId: '300',
+      expiration: '1785542400000',
+    })
+    expect(watch).toHaveBeenCalledWith({
+      userId: 'mailbox@example.com',
+      requestBody: { labelIds: ['INBOX'], topicName: 'projects/bookstore-space/topics/newsletter-sync' },
+    })
+  })
+
+  it('finds recent matching Inbox messages in chronological order', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { messages: [{ id: 'newer' }], nextPageToken: 'next-page' } })
+      .mockResolvedValueOnce({ data: { messages: [{ id: 'older' }] } })
+    const get = vi.fn(async ({ id }: { id: string }) => ({
+      data: {
+        raw: `${id}-raw`,
+        labelIds: ['INBOX'],
+        internalDate: id === 'older' ? '100' : '200',
+      },
+    }))
+    const client = { users: { messages: { list, get } } }
+    const gateway = createGmailGateway(client as never, 'mailbox@example.com')
+
+    await expect(gateway.findRecentInbox(30)).resolves.toEqual([
+      { gmailMessageId: 'older', raw: 'older-raw', labelIds: ['INBOX'] },
+      { gmailMessageId: 'newer', raw: 'newer-raw', labelIds: ['INBOX'] },
+    ])
+    expect(list).toHaveBeenNthCalledWith(1, {
+      userId: 'mailbox@example.com',
+      q: 'in:inbox from:info.rewildesign@gmail.com subject:小村碎碎念 newer_than:30d',
+    })
+    expect(list).toHaveBeenNthCalledWith(2, {
+      userId: 'mailbox@example.com',
+      q: 'in:inbox from:info.rewildesign@gmail.com subject:小村碎碎念 newer_than:30d',
+      pageToken: 'next-page',
+    })
+  })
 })

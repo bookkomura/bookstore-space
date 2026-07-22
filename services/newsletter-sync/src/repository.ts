@@ -14,12 +14,19 @@ export interface PendingDeploy {
   publicationKey: string
 }
 
+export interface WatchState {
+  historyId: string
+  expiration: string
+}
+
 export interface SyncRepository {
   claim(messageId: string, gmailMessageId?: string): Promise<ClaimResult>
   markPublished(messageId: string, leaseToken: string, storyId: number): Promise<MarkResult>
   markFailed(messageId: string, leaseToken: string, reason: string): Promise<MarkResult>
   getCursor(): Promise<string | null>
   setCursor(historyId: string): Promise<void>
+  getWatch(): Promise<WatchState | null>
+  setWatch(watch: WatchState): Promise<void>
   getPendingDeploy(publicationKey: string): Promise<PendingDeploy | null>
   markDeployComplete(publicationKey: string, storyId: number): Promise<void>
 }
@@ -159,6 +166,24 @@ export function createFirestoreSyncRepository(
 
     async setCursor(historyId) {
       await cursor.set({ historyId, updatedAt: now() }, { merge: true })
+    },
+
+    async getWatch() {
+      return firestore.runTransaction(async (transaction) => {
+        const data = (await transaction.get(cursor)).data()
+        if (typeof data?.watchHistoryId !== 'string' || typeof data.watchExpiration !== 'string') return null
+        return { historyId: data.watchHistoryId, expiration: data.watchExpiration }
+      })
+    },
+
+    async setWatch(watch) {
+      await firestore.runTransaction(async (transaction) => {
+        transaction.set(
+          cursor,
+          { watchHistoryId: watch.historyId, watchExpiration: watch.expiration, updatedAt: now() },
+          { merge: true },
+        )
+      })
     },
 
     async getPendingDeploy(publicationKey) {
