@@ -72,6 +72,31 @@ describe('parseNewsletterMime', () => {
         expect(parsed.blocks.indexOf(block)).toBeGreaterThanOrEqual(firstParagraphIndex)
       }
     }
+
+    expect(parsed.blocks[imageIndexes[1]]).toEqual({
+      type: 'image',
+      cid: 'ii_mrrbxm7k1',
+      alt: '0719-2.jpg',
+      caption: '但，就在１８當天早些，長這樣，',
+    })
+
+    const expectedActionLinks = [
+      { label: '７月場的頌缽', href: 'https://forms.gle/bowoKGVek8yKGx2k6' },
+      { label: '大人晚自習', href: 'https://forms.gle/iSdSgK7x5cmjpGJz8' },
+      { label: '荒野協會要來教你夏日節電', href: 'https://www.sow.org.tw/civicrm/event/info?reset=1&id=14210' },
+      {
+        label: '家族排列帶你走過中年危機',
+        href: 'https://docs.google.com/forms/d/1i6tTl7sBgF-Uvzbj03LPbvtNezmJankzLXN2slxW6Cc/viewform?edit_requested=true',
+      },
+    ]
+    const linkIndexes = expectedActionLinks.map((link) =>
+      parsed.blocks.findIndex(
+        (block) => block.type === 'link' && block.label === link.label && block.href === link.href,
+      ),
+    )
+
+    expect(linkIndexes).toEqual([...linkIndexes].sort((left, right) => left - right))
+    for (const index of linkIndexes) expect(index).toBeGreaterThan(imageIndexes[3])
   })
 
   it('preserves paragraph, image, caption, divider, and link order without emitting HTML', async () => {

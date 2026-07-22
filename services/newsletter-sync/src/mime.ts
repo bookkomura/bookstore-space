@@ -78,7 +78,7 @@ function parseHtmlBlocks(html: string): ParsedBlock[] {
     if (element.tagName === 'img') {
       const cid = normalizeCid(node.attr('src')?.slice('cid:'.length))
       if (!cid) return
-      const captionNode = node.next(`${PARAGRAPH_SELECTOR},div`).first()
+      const captionNode = followingCaptionNode(node)
       const caption = captionNode.length === 1 ? normalizeText(captionNode.text()) : ''
       if (caption) captionElements.add(captionNode.get(0))
       blocks.push({
@@ -114,6 +114,12 @@ function directText(node: ReturnType<ReturnType<typeof load>>): string {
     .contents()
     .filter((_, child) => child.type === 'text')
     .text()
+}
+
+function followingCaptionNode(node: ReturnType<ReturnType<typeof load>>) {
+  const next = node.next()
+  if (next.is(`${PARAGRAPH_SELECTOR},div`)) return next
+  return next.is('br') ? next.next(`${PARAGRAPH_SELECTOR},div`).first() : next
 }
 
 function isHttpsUrl(value: string): boolean {
