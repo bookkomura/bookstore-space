@@ -14,7 +14,9 @@ export type NewsletterDelivery = ParsedNewsletter & {
   labelIds: readonly string[]
 }
 
-export type DeployHook = () => Promise<void>
+export type DeployHook = (signal: AbortSignal) => Promise<void>
+
+const DEPLOY_HOOK_TIMEOUT_MS = 9 * 60 * 1000
 
 export interface NewsletterSyncServiceDependencies {
   repository: SyncRepository
@@ -84,16 +86,36 @@ export class NewsletterSyncService {
 
   private async drainDeployOutbox(publicationKey: string, storyId: number): Promise<void> {
     const claim = await this.dependencies.repository.claimPendingDeploy(publicationKey, storyId)
-    if (claim.status === 'complete' || claim.status === 'in_progress') return
+    if (claim.status === 'complete') return
+    if (claim.status === 'in_progress') throw new DeployInProgressError()
     if (claim.status === 'invalid') throw new Error('Deploy outbox story does not match the published story')
     try {
-      await this.dependencies.deployHook()
+      await this.invokeDeployHook()
     } catch (error) {
       await this.dependencies.repository.releasePendingDeploy(publicationKey, storyId, claim.leaseToken)
       throw error
     }
     const result = await this.dependencies.repository.markDeployComplete(publicationKey, storyId, claim.leaseToken)
     if (result !== 'marked') throw new Error('Deploy outbox lease was lost before it could be completed')
+  }
+
+  private async invokeDeployHook(): Promise<void> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), DEPLOY_HOOK_TIMEOUT_MS)
+    let rejectOnAbort!: (reason: Error) => void
+    const aborted = new Promise<never>((_, reject) => {
+      rejectOnAbort = reject
+    })
+    const onAbort = () => rejectOnAbort(new DeployHookTimeoutError())
+    controller.signal.addEventListener('abort', onAbort, { once: true })
+
+    try {
+      const hook = Promise.resolve().then(() => this.dependencies.deployHook(controller.signal))
+      await Promise.race([hook, aborted])
+    } finally {
+      clearTimeout(timeout)
+      controller.signal.removeEventListener('abort', onAbort)
+    }
   }
 }
 
@@ -104,13 +126,28 @@ export class SyncInProgressError extends Error {
   }
 }
 
+export class DeployInProgressError extends Error {
+  constructor() {
+    super('Newsletter deploy is currently being processed by an active lease')
+    this.name = 'DeployInProgressError'
+  }
+}
+
+export class DeployHookTimeoutError extends Error {
+  constructor() {
+    super('Newsletter deploy hook timed out before its lease expired')
+    this.name = 'DeployHookTimeoutError'
+  }
+}
+
 export function createDeployHook(url: string, fetcher: typeof fetch = fetch): DeployHook {
   if (new URL(url).protocol !== 'https:') throw new Error('Deploy hook URL must use HTTPS')
-  return async () => {
+  return async (signal) => {
     const response = await fetcher(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
+      signal,
     })
     if (!response.ok) throw new Error(`Deploy hook failed (${response.status})`)
   }

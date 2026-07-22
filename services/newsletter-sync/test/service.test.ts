@@ -66,6 +66,16 @@ function createInMemoryFirestore() {
   }
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve
+    reject = nextReject
+  })
+  return { promise, resolve, reject }
+}
+
 describe('NewsletterSyncService', () => {
   it('persists the Gmail watch cursor and expiration in private sync state', async () => {
     const { firestore, documents } = createInMemoryFirestore()
@@ -164,7 +174,7 @@ describe('NewsletterSyncService', () => {
     expect(deployHook).toHaveBeenCalledTimes(1)
   })
 
-  it('calls the deploy hook once when parallel duplicate deliveries drain the same outbox', async () => {
+  it('runs the deploy hook once and surfaces a retryable failure to the parallel duplicate delivery', async () => {
     const { repository, publisher, deployHook } = createDependencies()
     repository.claim
       .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' })
@@ -174,11 +184,98 @@ describe('NewsletterSyncService', () => {
       .mockResolvedValueOnce({ status: 'in_progress' })
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
-    await Promise.all([service.process(message), service.process(message)])
+    const results = await Promise.allSettled([service.process(message), service.process(message)])
 
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(deployHook).toHaveBeenCalledTimes(1)
     expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99, 'deploy-lease-1')
+    expect(results.map((result) => result.status).sort()).toEqual(['fulfilled', 'rejected'])
+    expect(results.find((result) => result.status === 'rejected')).toMatchObject({
+      reason: expect.objectContaining({ name: 'DeployInProgressError' }),
+    })
+  })
+
+  it('does not acknowledge Gmail history while a parallel delivery holds the deploy outbox, then retries it after the holder fails', async () => {
+    const { firestore } = createInMemoryFirestore()
+    const repository = createFirestoreSyncRepository(firestore as never, () => new Date('2026-07-19T00:00:00.000Z'), () => 'opaque-key')
+    await repository.setCursor('900')
+    const hookStarted = deferred<void>()
+    const firstHook = deferred<void>()
+    const deployHook = vi.fn(() => {
+      hookStarted.resolve()
+      return firstHook.promise
+    })
+    const gateway = { fetchHistorySince: vi.fn().mockResolvedValue([{
+      gmailMessageId: 'eligible', raw: 'eligible-raw', from: 'info.rewildesign@gmail.com', subject: '小村碎碎念', labelIds: ['INBOX'],
+    }]) }
+    const service = new NewsletterSyncService({
+      repository,
+      publisher: { publish: vi.fn().mockResolvedValue({ storyId: 99 }) },
+      deployHook,
+      gateway,
+      parseNewsletter: vi.fn().mockResolvedValue(message),
+    })
+
+    const firstDelivery = service.process(message)
+    await hookStarted.promise
+
+    await expect(service.syncHistory('901')).rejects.toThrow('deploy')
+    await expect(repository.getCursor()).resolves.toBe('900')
+
+    firstHook.reject(new Error('deploy unavailable'))
+    await expect(firstDelivery).rejects.toThrow('deploy unavailable')
+
+    deployHook.mockResolvedValueOnce(undefined)
+    await expect(service.syncHistory('901')).resolves.toEqual({ examined: 1, published: 0, duplicates: 1 })
+    await expect(repository.getCursor()).resolves.toBe('901')
+    expect(deployHook).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts a hanging deploy hook before its lease expires, then lets the expired lease be reclaimed without stale completion', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-19T00:00:00.000Z'))
+    const { firestore } = createInMemoryFirestore()
+    let token = 0
+    const repository = createFirestoreSyncRepository(firestore as never, () => new Date(), () => `opaque-${++token}`)
+    const publication = await repository.claim(message.messageId, message.gmailMessageId)
+    if (publication.status !== 'claimed') throw new Error('expected a publication lease claim')
+    await repository.markPublished(message.messageId, publication.leaseToken, 99)
+
+    const staleHook = deferred<void>()
+    const hookStarted = deferred<void>()
+    const deployHook = vi.fn(() => {
+      hookStarted.resolve()
+      return deployHook.mock.calls.length === 1 ? staleHook.promise : Promise.resolve()
+    })
+    const firstService = new NewsletterSyncService({
+      repository: { ...repository, releasePendingDeploy: vi.fn().mockResolvedValue('stale') },
+      publisher: { publish: vi.fn() },
+      deployHook,
+    })
+    const first = firstService.retryDeploy(publication.publicationKey, 99)
+    const firstFailure = first.catch((error: unknown) => error)
+
+    try {
+      await hookStarted.promise
+      await vi.advanceTimersByTimeAsync(9 * 60 * 1000)
+
+      const signal = deployHook.mock.calls[0]?.[0] as AbortSignal | undefined
+      expect(signal?.aborted).toBe(true)
+      expect(await firstFailure).toMatchObject({ name: 'DeployHookTimeoutError' })
+
+      await vi.advanceTimersByTimeAsync(60 * 1000 + 1)
+      const retryService = new NewsletterSyncService({ repository, publisher: { publish: vi.fn() }, deployHook })
+      await expect(retryService.retryDeploy(publication.publicationKey, 99)).resolves.toBeUndefined()
+
+      staleHook.resolve()
+      await Promise.resolve()
+      await expect(repository.claimPendingDeploy(publication.publicationKey, 99)).resolves.toEqual({ status: 'complete' })
+      expect(deployHook).toHaveBeenCalledTimes(2)
+    } finally {
+      staleHook.resolve()
+      await firstFailure
+      vi.useRealTimers()
+    }
   })
 
   it('does not deploy a failed asset upload and records a retryable failure', async () => {

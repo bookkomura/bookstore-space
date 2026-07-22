@@ -74,6 +74,49 @@ Moved `gcloud run services get-iam-policy` out of pre-apply review and into an e
 - Image-registry reader IAM is intentionally outside this module because registry ownership varies; operators must grant the Cloud Run service agent access when using a private registry.
 - Terraform creates only secret containers and IAM. All secret versions remain an out-of-band operator responsibility and no values are present in source or state configuration.
 
+## Final re-review fix: deploy outbox acknowledgement and hook deadline
+
+### Changed paths
+
+- `services/newsletter-sync/src/service.ts`
+- `services/newsletter-sync/test/service.test.ts`
+- `.superpowers/sdd/sync-task-5-report.md`
+
+### RED/GREEN
+
+RED command, before production changes:
+
+```sh
+npm --prefix services/newsletter-sync test -- test/service.test.ts
+```
+
+Observed result: 2 failing regressions (17 passing). The parallel delivery test showed `syncHistory('901')` resolving and thereby acknowledging the Gmail cursor while the original deploy hook still held the outbox lease. The hanging-hook test showed the hook was invoked without an `AbortSignal` (`expected undefined to be true`).
+
+GREEN command:
+
+```sh
+npm --prefix services/newsletter-sync test -- test/service.test.ts
+```
+
+Observed result: 1 file, 19 tests passed. A live deploy outbox lease now raises `DeployInProgressError`, so history sync remains retryable and does not set its cursor. Deploy hooks receive an `AbortSignal`; service execution races the hook against a nine-minute abort deadline, before the ten-minute Firestore lease. `createDeployHook` forwards that signal to `fetch`. A hanging original invocation is aborted, an expired unreleased lease is reclaimable, and its later settlement cannot mark the reclaimed outbox claim.
+
+### Verification results
+
+| Command | Result |
+| --- | --- |
+| `npm --prefix services/newsletter-sync test -- test/service.test.ts` | Passed: 1 file, 19 tests. |
+| `npm --prefix services/newsletter-sync test` | Passed outside the sandbox: 7 files, 70 tests. The sandbox attempt failed only because Supertest could not bind `0.0.0.0` (`listen EPERM`); the permitted local rerun passed. |
+| `npm --prefix services/newsletter-sync run build` | Passed: `tsc -p tsconfig.json`. |
+| `git diff --check` | Passed with no whitespace errors. |
+| Fixture diff/hash check | No fixture diff; `newsletter.eml` SHA-256 is `33e1dab313ac693e4c6a5081efac6a2be8bb3b75e911aad4c133f87b30e0c529`. |
+
+### Constraints preserved
+
+- No Terraform apply and no cloud calls were made.
+- No bearer secret, Message-ID, or message content is logged by this change.
+- The deploy-failure path releases the active claim where possible and preserves the existing cursor retry behavior.
+- `services/newsletter-sync/test/fixtures/newsletter.eml` was not modified; its documented CRLF compatibility constraint remains non-blocking.
+
 ## Final branch review fixes
 
 ### RED/GREEN
