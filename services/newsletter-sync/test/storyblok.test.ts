@@ -112,6 +112,23 @@ describe('createStoryblokPublisher', () => {
     expect(fetcher).toHaveBeenCalledTimes(4)
   })
 
+  it('publishes and re-verifies an existing deterministic draft instead of creating another story', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 42, slug: 'newsletters', is_folder: true }] }))
+      .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 99, slug: 'newsletter-publication-key', published: false }] }))
+      .mockResolvedValueOnce(jsonResponse({ story: { id: 99 } }))
+      .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 99, slug: 'newsletter-publication-key', published: true }] }))
+    const publisher = createStoryblokPublisher({ spaceId: 'space', managementToken: 'management-token', fetcher, uuid: () => 'uid-1' })
+
+    await expect(publisher.publish(newsletter, 'publication-key')).resolves.toEqual({ storyId: 99 })
+
+    const publishRequest = new Request(fetcher.mock.calls[2][0], fetcher.mock.calls[2][1])
+    expect(publishRequest.url).toBe('https://mapi.storyblok.com/v1/spaces/space/stories/99/publish')
+    expect(publishRequest.method).toBe('GET')
+    expect(fetcher.mock.calls.filter(([url, init]) => String(url).endsWith('/stories') && init?.method === 'POST')).toHaveLength(0)
+  })
+
   it.each([
     ['subject', (issue: typeof newsletter) => ({ ...issue, subject: issue.messageId })],
     ['paragraph', (issue: typeof newsletter) => ({ ...issue, blocks: [{ type: 'paragraph' as const, text: issue.messageId }] })],

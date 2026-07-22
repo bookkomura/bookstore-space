@@ -63,7 +63,7 @@ export function createStoryblokPublisher({
     return { id: folder.id, fullSlug: typeof folder.full_slug === 'string' ? folder.full_slug : folderSlug }
   }
 
-  async function findPublishedStory(fullSlug: string): Promise<number | null> {
+  async function findStory(fullSlug: string): Promise<{ id: number; published: boolean } | null> {
     const query = new URLSearchParams({ by_slugs: fullSlug })
     const response = (await requestJson(`/stories?${query}`)) as { stories?: unknown }
     const story = Array.isArray(response.stories)
@@ -73,8 +73,20 @@ export function createStoryblokPublisher({
         )
       : undefined
     if (!story) return null
-    if (story.published !== true) throw new Error(`Storyblok story ${fullSlug} exists but is not published`)
-    return story.id
+    return { id: story.id, published: story.published === true }
+  }
+
+  async function findPublishedStory(fullSlug: string): Promise<number | null> {
+    const story = await findStory(fullSlug)
+    if (!story) return null
+    if (story.published) return story.id
+
+    await requestJson(`/stories/${story.id}/publish`)
+    const verified = await findStory(fullSlug)
+    if (!verified || !verified.published) {
+      throw new Error(`Storyblok story ${fullSlug} was not confirmed published after recovery`)
+    }
+    return verified.id
   }
 
   async function uploadAttachment(attachment: { content: Buffer; filename: string; contentType: string }): Promise<string> {

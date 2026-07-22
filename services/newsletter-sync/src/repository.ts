@@ -4,10 +4,15 @@ import { FieldValue, type Firestore } from '@google-cloud/firestore'
 
 export type ClaimResult =
   | { status: 'claimed'; publicationKey: string; leaseToken: string }
-  | { status: 'published'; storyId: number }
+  | { status: 'published'; storyId: number; publicationKey: string }
   | { status: 'in_progress' }
 
 export type MarkResult = 'marked' | 'stale'
+
+export interface PendingDeploy {
+  storyId: number
+  publicationKey: string
+}
 
 export interface SyncRepository {
   claim(messageId: string, gmailMessageId?: string): Promise<ClaimResult>
@@ -15,7 +20,8 @@ export interface SyncRepository {
   markFailed(messageId: string, leaseToken: string, reason: string): Promise<MarkResult>
   getCursor(): Promise<string | null>
   setCursor(historyId: string): Promise<void>
-  enqueueDeployRetry(storyId: number): Promise<void>
+  getPendingDeploy(publicationKey: string): Promise<PendingDeploy | null>
+  markDeployComplete(publicationKey: string, storyId: number): Promise<void>
 }
 
 const PROCESSING_LEASE_MS = 10 * 60 * 1000
@@ -39,8 +45,12 @@ export function createFirestoreSyncRepository(
         const data = snapshot.data()
         const currentTime = now()
         const leaseExpiresAt = asDate(data?.processingLeaseExpiresAt)
-        if (data?.status === 'published' && typeof data.storyId === 'number') {
-          return { status: 'published', storyId: data.storyId }
+        if (
+          data?.status === 'published' &&
+          typeof data.storyId === 'number' &&
+          typeof data.publicationKey === 'string'
+        ) {
+          return { status: 'published', storyId: data.storyId, publicationKey: data.publicationKey }
         }
         if (data?.status === 'processing' && leaseExpiresAt !== null && leaseExpiresAt > currentTime) {
           return { status: 'in_progress' }
@@ -82,6 +92,8 @@ export function createFirestoreSyncRepository(
         ) {
           return 'stale'
         }
+        if (typeof data.publicationKey !== 'string') return 'stale'
+        const outbox = firestore.collection('newsletterDeployOutbox').doc(data.publicationKey)
         transaction.set(
           message,
           {
@@ -89,6 +101,17 @@ export function createFirestoreSyncRepository(
             storyId,
             publishedAt: currentTime,
             processingLeaseExpiresAt: null,
+            updatedAt: currentTime,
+          },
+          { merge: true },
+        )
+        transaction.set(
+          outbox,
+          {
+            publicationKey: data.publicationKey,
+            storyId,
+            status: 'pending',
+            createdAt: currentTime,
             updatedAt: currentTime,
           },
           { merge: true },
@@ -138,16 +161,27 @@ export function createFirestoreSyncRepository(
       await cursor.set({ historyId, updatedAt: now() }, { merge: true })
     },
 
-    async enqueueDeployRetry(storyId) {
-      await firestore.collection('newsletterDeployRetries').doc(String(storyId)).set(
-        {
-          storyId,
-          status: 'pending',
-          lastErrorAt: now(),
-          attempts: FieldValue.increment(1),
-        },
-        { merge: true },
-      )
+    async getPendingDeploy(publicationKey) {
+      const snapshot = await firestore.collection('newsletterDeployOutbox').doc(publicationKey).get()
+      const data = snapshot.data()
+      if (
+        data?.status !== 'pending' ||
+        data.publicationKey !== publicationKey ||
+        typeof data.storyId !== 'number'
+      ) {
+        return null
+      }
+      return { publicationKey, storyId: data.storyId }
+    },
+
+    async markDeployComplete(publicationKey, storyId) {
+      const outbox = firestore.collection('newsletterDeployOutbox').doc(publicationKey)
+      await firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(outbox)
+        const data = snapshot.data()
+        if (data?.status !== 'pending' || data.publicationKey !== publicationKey || data.storyId !== storyId) return
+        transaction.set(outbox, { status: 'complete', completedAt: now(), updatedAt: now() }, { merge: true })
+      })
     },
   }
 }

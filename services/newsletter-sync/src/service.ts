@@ -35,7 +35,10 @@ export class NewsletterSyncService {
     if (!isEligibleMessage(message)) return 'ignored'
 
     const claim = await this.dependencies.repository.claim(message.messageId, message.gmailMessageId)
-    if (claim.status === 'published') return 'duplicate'
+    if (claim.status === 'published') {
+      await this.drainDeployOutbox(claim.publicationKey, claim.storyId)
+      return 'duplicate'
+    }
     if (claim.status === 'in_progress') throw new SyncInProgressError()
 
     let publication: { storyId: number }
@@ -48,11 +51,7 @@ export class NewsletterSyncService {
 
     const markResult = await this.dependencies.repository.markPublished(message.messageId, claim.leaseToken, publication.storyId)
     if (markResult !== 'marked') throw new Error('Publication lease was lost before it could be marked')
-    try {
-      await this.dependencies.deployHook()
-    } catch {
-      await this.dependencies.repository.enqueueDeployRetry(publication.storyId)
-    }
+    await this.drainDeployOutbox(claim.publicationKey, publication.storyId)
     return 'published'
   }
 
@@ -78,13 +77,20 @@ export class NewsletterSyncService {
     return result
   }
 
-  async retryDeploy(storyId: number): Promise<void> {
+  async retryDeploy(publicationKey: string, storyId: number): Promise<void> {
+    await this.drainDeployOutbox(publicationKey, storyId)
+  }
+
+  private async drainDeployOutbox(publicationKey: string, storyId: number): Promise<void> {
+    const pending = await this.dependencies.repository.getPendingDeploy(publicationKey)
+    if (!pending) return
+    if (pending.storyId !== storyId) throw new Error('Deploy outbox story does not match the published story')
     try {
       await this.dependencies.deployHook()
-    } catch (error) {
-      await this.dependencies.repository.enqueueDeployRetry(storyId)
-      throw error
+    } catch {
+      return
     }
+    await this.dependencies.repository.markDeployComplete(publicationKey, storyId)
   }
 }
 

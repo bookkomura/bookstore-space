@@ -22,7 +22,8 @@ function createDependencies() {
       markFailed: vi.fn().mockResolvedValue(undefined),
       getCursor: vi.fn().mockResolvedValue('old-history'),
       setCursor: vi.fn().mockResolvedValue(undefined),
-      enqueueDeployRetry: vi.fn().mockResolvedValue(undefined),
+      getPendingDeploy: vi.fn().mockResolvedValue({ storyId: 99, publicationKey: 'publication-key' }),
+      markDeployComplete: vi.fn().mockResolvedValue(undefined),
     },
     publisher: { publish: vi.fn().mockResolvedValue({ storyId: 99 }) },
     deployHook: vi.fn().mockResolvedValue(undefined),
@@ -33,6 +34,7 @@ function createInMemoryFirestore() {
   const documents = new Map<string, Record<string, unknown>>()
   const document = (path: string) => ({ path })
   return {
+    documents,
     firestore: {
       collection: (collection: string) => ({ doc: (id: string) => document(`${collection}/${id}`) }),
       runTransaction: async <T>(callback: (transaction: {
@@ -53,6 +55,21 @@ function createInMemoryFirestore() {
 }
 
 describe('NewsletterSyncService', () => {
+  it('writes a pending deploy outbox record atomically with published state', async () => {
+    const { firestore, documents } = createInMemoryFirestore()
+    const repository = createFirestoreSyncRepository(firestore as never, () => new Date('2026-07-19T00:00:00.000Z'), () => 'opaque-key')
+    const claim = await repository.claim(message.messageId, message.gmailMessageId)
+    if (claim.status !== 'claimed') throw new Error('expected a lease claim')
+
+    await expect(repository.markPublished(message.messageId, claim.leaseToken, 99)).resolves.toBe('marked')
+
+    expect(documents.get('newsletterDeployOutbox/opaque-key')).toMatchObject({
+      status: 'pending',
+      storyId: 99,
+      publicationKey: 'opaque-key',
+    })
+  })
+
   it('rejects a stale lease token after the lease expires, even before another worker reclaims it', async () => {
     const { firestore } = createInMemoryFirestore()
     let currentTime = new Date('2026-07-19T00:00:00.000Z')
@@ -72,7 +89,8 @@ describe('NewsletterSyncService', () => {
 
   it('publishes a Message-ID once even when delivery repeats', async () => {
     const { repository, publisher, deployHook } = createDependencies()
-    repository.claim.mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' }).mockResolvedValueOnce({ status: 'published', storyId: 99 })
+    repository.claim.mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' }).mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
+    repository.getPendingDeploy.mockResolvedValueOnce({ storyId: 99, publicationKey: 'publication-key' }).mockResolvedValueOnce(null)
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
     await service.process(message)
@@ -94,18 +112,37 @@ describe('NewsletterSyncService', () => {
     expect(repository.markFailed).toHaveBeenCalledWith(message.messageId, 'lease-1', expect.stringContaining('asset upload failed'))
   })
 
-  it('records a deploy retry after publication without undoing or recreating the story', async () => {
+  it('keeps the transactional outbox pending after a hook failure and drains it on the next delivery without recreating the story', async () => {
     const { repository, publisher, deployHook } = createDependencies()
     deployHook.mockRejectedValueOnce(new Error('deploy unavailable')).mockResolvedValueOnce(undefined)
+    repository.claim.mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' }).mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
     const service = new NewsletterSyncService({ repository, publisher, deployHook })
 
     await expect(service.process(message)).resolves.toBe('published')
-    await service.retryDeploy(99)
+    await expect(service.process(message)).resolves.toBe('duplicate')
 
     expect(repository.markPublished).toHaveBeenCalledWith(message.messageId, 'lease-1', 99)
-    expect(repository.enqueueDeployRetry).toHaveBeenCalledWith(99)
     expect(publisher.publish).toHaveBeenCalledTimes(1)
     expect(deployHook).toHaveBeenCalledTimes(2)
+    expect(repository.markDeployComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('drains the durable outbox on a later published delivery after interruption before the hook', async () => {
+    const { repository, publisher, deployHook } = createDependencies()
+    repository.claim
+      .mockResolvedValueOnce({ status: 'claimed', publicationKey: 'publication-key', leaseToken: 'lease-1' })
+      .mockResolvedValueOnce({ status: 'published', storyId: 99, publicationKey: 'publication-key' })
+    repository.getPendingDeploy
+      .mockRejectedValueOnce(new Error('worker interrupted before hook'))
+      .mockResolvedValueOnce({ storyId: 99, publicationKey: 'publication-key' })
+    const service = new NewsletterSyncService({ repository, publisher, deployHook })
+
+    await expect(service.process(message)).rejects.toThrow('worker interrupted before hook')
+    await expect(service.process(message)).resolves.toBe('duplicate')
+
+    expect(publisher.publish).toHaveBeenCalledTimes(1)
+    expect(deployHook).toHaveBeenCalledTimes(1)
+    expect(repository.markDeployComplete).toHaveBeenCalledWith('publication-key', 99)
   })
 
   it('parses raw Gmail refs, filters ineligible mail, and advances the cursor after successful history sync', async () => {
