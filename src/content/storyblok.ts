@@ -145,6 +145,12 @@ export function mapStoriesToBundle(rawStories: unknown[]): ContentBundle {
     newsletters,
   })
 
-  if (!result.success) invalidContent('映射後的內容未通過驗證')
+  if (!result.success) {
+    const details = result.error.issues
+      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+      .join('; ')
+
+    invalidContent(`映射後的內容未通過驗證：${details}`)
+  }
   return result.data
 }
