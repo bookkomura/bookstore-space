@@ -27,10 +27,10 @@ function displayDate(sentAt: string) {
     data-testid="newsletter-archive"
     role="dialog"
     aria-modal="true"
-    aria-label="小村碎碎念檔案室"
+    aria-label="小村碎碎念"
   >
     <header class="archive-header">
-      <h2>小村碎碎念檔案室</h2>
+      <h2>小村碎碎念</h2>
       <button data-testid="close" type="button" aria-label="關閉" @click="emit('close')">✕</button>
     </header>
 

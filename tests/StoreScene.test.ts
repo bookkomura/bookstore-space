@@ -173,7 +173,7 @@ describe('StoreScene', () => {
         'dynamic-showcase': '動態展示',
         'shelf-1': '店主精選',
         'info-1': '營業資訊',
-        'archive-1': '後頭村・碎碎念檔案室',
+        'archive-1': '小村碎碎念',
       }, zones),
     )
 

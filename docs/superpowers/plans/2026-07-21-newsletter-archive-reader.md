@@ -1,8 +1,8 @@
-# 小村碎碎念檔案室前台 Implementation Plan
+# 小村碎碎念前台 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在書店場景加入「後頭村・碎碎念檔案室」互動點，並以固定信封列與獨立直向信紙閱讀器呈現已發布電子報。
+**Goal:** 在書店場景加入「小村碎碎念」互動點，並以固定信封列與獨立直向信紙閱讀器呈現已發布電子報。
 
 **Architecture:** `schema.ts` 定義公開 newsletter JSON，`storyblok.ts` 只映射已發布 story 並依寄送時間由新到舊排序。固定的 Phaser `archive-1` zone 開啟 `NewsletterArchive`；overlay 的信封列橫向捲動、信紙區獨立直向捲動。
 
@@ -140,7 +140,7 @@ it('has one archive entry beside, not inside, the stairs', () => {
   expect(archive!.x).toBeGreaterThanOrEqual(stairs.x + stairs.width)
 })
 it('labels the archive entry', () => {
-  expect(buildInteractionLabels(content)['archive-1']).toBe('後頭村・碎碎念檔案室')
+  expect(buildInteractionLabels(content)['archive-1']).toBe('小村碎碎念')
 })
 ```
 
@@ -158,7 +158,7 @@ Add `'archive'` to `ZoneType`. Add this object to `STATIC_INTERACTION_ZONES`:
 { id: 'archive-1', type: 'archive', x: 245, y: 105, width: 68, height: 135, anchorX: 279, anchorY: 171 },
 ```
 
-Add `'archive-1': '後頭村・碎碎念檔案室'` to the labels. After the existing info rule, add:
+Add `'archive-1': '小村碎碎念'` to the labels. After the existing info rule, add:
 
 ```ts
 const archiveZones = zones.filter((zone) => zone.type === 'archive')
@@ -228,7 +228,7 @@ function displayTitle(subject: string) {
 }
 ```
 
-Render a `role="dialog" aria-modal="true" aria-label="小村碎碎念檔案室"` root. The nav is `aria-label="選擇電子報期數"`; each envelope is a 44px-or-larger button with `aria-pressed`, date, title, and `.envelope--open` for the selected issue. Render `<main ref="paper" data-testid="newsletter-content" tabindex="0">` with a discriminated `v-for`: paragraphs as `p`, images in `figure/img/figcaption`, link blocks as `a data-testid="newsletter-link" target="_blank" rel="noopener"`, dividers as `hr`, and an empty state.
+Render a `role="dialog" aria-modal="true" aria-label="小村碎碎念"` root. The nav is `aria-label="選擇電子報期數"`; each envelope is a 44px-or-larger button with `aria-pressed`, date, title, and `.envelope--open` for the selected issue. Render `<main ref="paper" data-testid="newsletter-content" tabindex="0">` with a discriminated `v-for`: paragraphs as `p`, images in `figure/img/figcaption`, link blocks as `a data-testid="newsletter-link" target="_blank" rel="noopener"`, dividers as `hr`, and an empty state.
 
 The root CSS must be `position: fixed; inset: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden`; the nav alone gets `overflow-x: auto; overscroll-behavior-x: contain`; main alone gets `overflow-y: auto; scrollbar-gutter: stable`. Make a pseudo-element flap for the envelope and include:
 
