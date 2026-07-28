@@ -145,11 +145,11 @@ describe('createGmailGateway', () => {
     ])
     expect(list).toHaveBeenNthCalledWith(1, {
       userId: 'mailbox@example.com',
-      q: 'in:inbox from:info.rewildesign@gmail.com subject:小村碎碎念 newer_than:30d',
+      q: 'in:inbox {from:info.rewildesign@gmail.com OR from:csc981.04@gmail.com} subject:小村碎碎念 newer_than:30d',
     })
     expect(list).toHaveBeenNthCalledWith(2, {
       userId: 'mailbox@example.com',
-      q: 'in:inbox from:info.rewildesign@gmail.com subject:小村碎碎念 newer_than:30d',
+      q: 'in:inbox {from:info.rewildesign@gmail.com OR from:csc981.04@gmail.com} subject:小村碎碎念 newer_than:30d',
       pageToken: 'next-page',
     })
   })

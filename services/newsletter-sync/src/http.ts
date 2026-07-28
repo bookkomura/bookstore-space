@@ -122,7 +122,10 @@ function parseHistoryId(body: unknown): string | null {
   if (typeof data !== 'string' || !isCanonicalBase64(data)) return null
   try {
     const decoded = JSON.parse(Buffer.from(data, 'base64').toString('utf8'))
-    return typeof decoded?.historyId === 'string' && decoded.historyId.length > 0 ? decoded.historyId : null
+    const historyId = decoded?.historyId
+    if (typeof historyId === 'string' && historyId.length > 0) return historyId
+    if (typeof historyId === 'number' && Number.isSafeInteger(historyId) && historyId > 0) return String(historyId)
+    return null
   } catch {
     return null
   }

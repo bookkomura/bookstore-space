@@ -19,7 +19,7 @@ const validEnv: NodeJS.ProcessEnv = {
 describe('loadConfig', () => {
   it('accepts required settings and fixed mailbox filter', () => {
     expect(loadConfig(validEnv)).toMatchObject({
-      sender: 'info.rewildesign@gmail.com',
+      senders: ['info.rewildesign@gmail.com', 'csc981.04@gmail.com'],
       subjectNeedle: '小村碎碎念',
     })
   })

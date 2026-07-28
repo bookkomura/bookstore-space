@@ -1,6 +1,6 @@
 import type { gmail_v1 } from 'googleapis'
 
-const NEWSLETTER_SENDER = 'info.rewildesign@gmail.com'
+const NEWSLETTER_SENDERS = ['info.rewildesign@gmail.com', 'csc981.04@gmail.com'] as const
 const SUBJECT_NEEDLE = '小村碎碎念'
 const RECENT_INBOX_MESSAGE_LIMIT = 100
 
@@ -44,7 +44,7 @@ export function isEligibleMessage(input: {
   labelIds: readonly string[]
 }): boolean {
   return (
-    input.from === NEWSLETTER_SENDER &&
+    (NEWSLETTER_SENDERS as readonly string[]).includes(input.from) &&
     input.subject.includes(SUBJECT_NEEDLE) &&
     input.labelIds.includes('INBOX')
   )
@@ -97,7 +97,8 @@ export function createGmailGateway(client: gmail_v1.Gmail, userId = 'me'): Gmail
     async findRecentInbox(days) {
       const messageIds = new Set<string>()
       let pageToken: string | undefined
-      const q = `in:inbox from:${NEWSLETTER_SENDER} subject:${SUBJECT_NEEDLE} newer_than:${days}d`
+      const fromClause = NEWSLETTER_SENDERS.map((s) => `from:${s}`).join(' OR ')
+      const q = `in:inbox {${fromClause}} subject:${SUBJECT_NEEDLE} newer_than:${days}d`
 
       do {
         const response = await client.users.messages.list({ userId, q, ...(pageToken ? { pageToken } : {}) })

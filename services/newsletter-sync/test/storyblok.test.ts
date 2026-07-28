@@ -87,6 +87,41 @@ describe('createStoryblokPublisher', () => {
     expect(String(payload.story.slug)).toBe('newsletter-publication-key')
   })
 
+  it('accepts the live top-level finish_upload asset response', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ stories: [{ id: 42, slug: 'newsletters', is_folder: true }] }))
+      .mockResolvedValueOnce(jsonResponse({ stories: [] }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: 7,
+          post_url: 'https://uploads.example.test/',
+          fields: { key: 'f/space/market.jpg', policy: 'signed-policy' },
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: 7,
+          filename: 'https://a.storyblok.com/f/space/market.jpg',
+          alt: null,
+          copyright: null,
+          focus: null,
+          is_private: false,
+          title: null,
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ story: { id: 99, published: true } }))
+    const publisher = createStoryblokPublisher({
+      spaceId: 'space',
+      managementToken: 'management-token',
+      fetcher,
+      uuid: () => 'uid-1',
+    })
+
+    await expect(publisher.publish(newsletter, 'publication-key')).resolves.toEqual({ storyId: 99 })
+  })
+
   it('recovers a published story by deterministic slug when a create response is lost', async () => {
     const fetcher = vi
       .fn<typeof fetch>()

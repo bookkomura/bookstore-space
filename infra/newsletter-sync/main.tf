@@ -3,12 +3,12 @@ data "google_project" "current" {}
 locals {
   service_name = "newsletter-sync"
   secret_ids = {
-    gmail_oauth_client_id     = "newsletter-sync-gmail-oauth-client-id"
-    gmail_oauth_client_secret = "newsletter-sync-gmail-oauth-client-secret"
-    gmail_oauth_refresh_token = "newsletter-sync-gmail-oauth-refresh-token"
+    gmail_oauth_client_id      = "newsletter-sync-gmail-oauth-client-id"
+    gmail_oauth_client_secret  = "newsletter-sync-gmail-oauth-client-secret"
+    gmail_oauth_refresh_token  = "newsletter-sync-gmail-oauth-refresh-token"
     storyblok_management_token = "newsletter-sync-storyblok-management-token"
     cloudflare_deploy_hook_url = "newsletter-sync-cloudflare-deploy-hook-url"
-    replay_shared_secret      = "newsletter-sync-replay-shared-secret"
+    replay_shared_secret       = "newsletter-sync-replay-shared-secret"
   }
   required_apis = toset([
     "cloudscheduler.googleapis.com",
@@ -92,12 +92,13 @@ resource "google_pubsub_topic_iam_member" "gmail_publisher" {
 }
 
 resource "google_cloud_run_v2_service" "sync" {
-  name     = local.service_name
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  name                = local.service_name
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = true
 
   template {
-    service_account = google_service_account.runtime.email
+    service_account                  = google_service_account.runtime.email
     max_instance_request_concurrency = 1
 
     scaling {
@@ -130,12 +131,12 @@ resource "google_cloud_run_v2_service" "sync" {
 
       dynamic "env" {
         for_each = {
-          GMAIL_OAUTH_CLIENT_ID     = "gmail_oauth_client_id"
-          GMAIL_OAUTH_CLIENT_SECRET = "gmail_oauth_client_secret"
-          GMAIL_OAUTH_REFRESH_TOKEN = "gmail_oauth_refresh_token"
+          GMAIL_OAUTH_CLIENT_ID      = "gmail_oauth_client_id"
+          GMAIL_OAUTH_CLIENT_SECRET  = "gmail_oauth_client_secret"
+          GMAIL_OAUTH_REFRESH_TOKEN  = "gmail_oauth_refresh_token"
           STORYBLOK_MANAGEMENT_TOKEN = "storyblok_management_token"
           CLOUDFLARE_DEPLOY_HOOK_URL = "cloudflare_deploy_hook_url"
-          REPLAY_SHARED_SECRET      = "replay_shared_secret"
+          REPLAY_SHARED_SECRET       = "replay_shared_secret"
         }
 
         content {

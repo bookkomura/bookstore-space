@@ -44,6 +44,15 @@ describe('createHttpApp', () => {
     expect(dependencies.service.syncHistory).toHaveBeenCalledWith('123')
   })
 
+  it('normalizes a numeric Gmail historyId before synchronizing it', async () => {
+    const dependencies = createDependencies()
+    const data = Buffer.from(JSON.stringify({ emailAddress: 'mailbox@example.com', historyId: 123 })).toString('base64')
+
+    await request(createHttpApp(dependencies)).post('/pubsub/gmail').send({ message: { data } }).expect(204)
+
+    expect(dependencies.service.syncHistory).toHaveBeenCalledWith('123')
+  })
+
   it.each([
     {},
     { message: {} },

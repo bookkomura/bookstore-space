@@ -9,3 +9,9 @@ test-results/
 playwright-report/
 .worktrees/
 services/newsletter-sync/coverage/
+
+# Terraform local cache, state, and plans
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan

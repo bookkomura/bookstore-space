@@ -110,9 +110,10 @@ export function createStoryblokPublisher({
     if (!upload.ok) throw new Error(`Storyblok asset upload failed (${upload.status})`)
 
     const completed = (await requestJson(`/assets/${signed.id}/finish_upload`)) as {
+      filename?: unknown
       asset?: { filename?: unknown }
     }
-    const filename = completed.asset?.filename
+    const filename = completed.filename ?? completed.asset?.filename
     if (typeof filename !== 'string' || filename.length === 0) {
       throw new Error('Storyblok did not return an uploaded asset filename')
     }

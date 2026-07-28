@@ -11,7 +11,7 @@ export interface SyncConfig {
   cloudflareDeployHookUrl: string
   gmailPubsubTopic: string
   replaySharedSecret: string
-  sender: 'info.rewildesign@gmail.com'
+  senders: readonly string[]
   subjectNeedle: '小村碎碎念'
 }
 
@@ -56,7 +56,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): SyncConfig {
     cloudflareDeployHookUrl: values.CLOUDFLARE_DEPLOY_HOOK_URL,
     gmailPubsubTopic: values.GMAIL_PUBSUB_TOPIC,
     replaySharedSecret: values.REPLAY_SHARED_SECRET,
-    sender: 'info.rewildesign@gmail.com',
+    senders: ['info.rewildesign@gmail.com', 'csc981.04@gmail.com'],
     subjectNeedle: '小村碎碎念',
   }
 }
