@@ -4,6 +4,10 @@ This directory declares, but does not apply, the Google Cloud resources for news
 
 It intentionally never contains secret values or `google_secret_manager_secret_version` resources. Secret versions must be supplied through an approved out-of-band process.
 
+For the end-to-end trigger diagram, account handover options, full-project
+migration procedure, cutover, rollback, and verification checklist, see the
+[cloud runbook](../../docs/newsletter-sync-cloud-runbook.md).
+
 ## Required APIs and IAM
 
 Terraform enables these APIs: Cloud Run, Cloud Scheduler, Firestore, Gmail, IAM Credentials, Pub/Sub, and Secret Manager.

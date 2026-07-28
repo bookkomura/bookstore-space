@@ -2,6 +2,10 @@
 
 This service receives authenticated Gmail Pub/Sub pushes at `POST /pubsub/gmail`, synchronizes eligible INBOX mail into Storyblok, and exposes bearer-protected task routes for watch renewal and replay. It is designed to run as the Cloud Run service and as the `renew-watch` Cloud Run Job described in [the infrastructure README](../../infra/newsletter-sync/README.md).
 
+The complete runtime diagram, trigger explanation, account migration procedure,
+cutover, rollback, and production verification checklist are documented in the
+[cloud runbook](../../docs/newsletter-sync-cloud-runbook.md).
+
 ## Build and run
 
 Build the deployable image from this directory:

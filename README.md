@@ -21,6 +21,12 @@ npm run dev
 3. 環境變數：`STORYBLOK_TOKEN`（Storyblok Content API token，無則用 sample 內容）
 4. Storyblok webhook：Settings → Webhooks → Story published/unpublished → 貼上 Cloudflare Pages 的 Deploy Hook URL（內容更新自動重新部署）
 
+## 電子報雲端同步
+
+Gmail → Pub/Sub → Cloud Run → Firestore → Storyblok → Cloudflare Pages
+的觸發流程、維運方式與帳號遷移步驟，請參考
+[電子報 Gmail → CMS 雲端同步與帳號遷移手冊](docs/newsletter-sync-cloud-runbook.md)。
+
 ## Storyblok 內容模型
 
 Component 名稱與欄位（story slug = 地圖互動點 id）：

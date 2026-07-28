@@ -2,6 +2,9 @@
 
 The `newsletter` Storyblok component defines one public newsletter issue.
 
+Newsletter stories are published below a root Content folder named
+`Newsletters` whose slug must be exactly `newsletters`.
+
 | Field | Type |
 | --- | --- |
 | `sent_at` | Date/Time |
