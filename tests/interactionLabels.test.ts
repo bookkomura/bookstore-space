@@ -18,7 +18,7 @@ describe('interactionLabels', () => {
   })
 
   it('labels the archive entry', () => {
-    expect(buildInteractionLabels(content)['archive-1']).toBe('後頭村・碎碎念檔案室')
+    expect(buildInteractionLabels(content)['archive-1']).toBe('小村碎碎念')
   })
 
   it('十一至二十字分成兩行', () => {

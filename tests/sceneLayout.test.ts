@@ -29,11 +29,11 @@ describe('sceneLayout', () => {
     ])
   })
 
-  it('has one archive entry beside, not inside, the stairs', () => {
+  it('has one archive entry beside the left bookshelf', () => {
     const archive = STATIC_INTERACTION_ZONES.find((zone) => zone.id === 'archive-1')
-    expect(archive).toEqual({ id: 'archive-1', type: 'archive', x: 245, y: 105, width: 68, height: 135, anchorX: 279, anchorY: 171 })
-    const stairs = COLLISION_RECTS.find((rect) => rect.id === 'stairs')!
-    expect(archive!.x).toBeGreaterThanOrEqual(stairs.x + stairs.width)
+    expect(archive).toEqual({ id: 'archive-1', type: 'archive', x: 200, y: 510, width: 72, height: 160, anchorX: 140, anchorY: 550, })
+    const bookshelf = COLLISION_RECTS.find((rect) => rect.id === 'shelves-left')!
+    expect(archive!.x).toBeGreaterThanOrEqual(bookshelf.x + bookshelf.width)
   })
 
   it('由右至左為三筆 Showcase 建立置中的書櫃互動點', () => {
