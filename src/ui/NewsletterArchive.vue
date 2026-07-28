@@ -45,8 +45,12 @@ function displayDate(sentAt: string) {
         data-testid="envelope-issue"
         @click="selectedIndex = index"
       >
-        <time :datetime="issue.sentAt">{{ displayDate(issue.sentAt) }}</time>
-        <span>{{ displayTitle(issue.subject) }}</span>
+        <span class="envelope-flap" aria-hidden="true" />
+        <span class="envelope-body">
+          <span class="envelope-stamp" aria-hidden="true" />
+          <time :datetime="issue.sentAt">{{ displayDate(issue.sentAt) }}</time>
+          <span class="envelope-title">{{ displayTitle(issue.subject) }}</span>
+        </span>
       </button>
     </nav>
 
@@ -123,30 +127,62 @@ function displayDate(sentAt: string) {
 .envelope {
   position: relative;
   flex: 0 0 10rem;
-  min-height: 44px;
-  padding: 20px 12px 10px;
-  overflow: hidden;
+  min-height: 74px;
+  padding: 0;
+  overflow: visible;
   color: #322718;
   text-align: left;
-  background: #f8f1e5;
-  border: 1px solid #aa8760;
-  border-radius: 3px;
+  background: transparent;
+  border: 0;
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.envelope::before {
+.envelope-body {
   position: absolute;
-  inset: 0 0 auto;
-  height: 38%;
-  content: '';
-  background: linear-gradient(145deg, transparent 49%, #d9c3a5 50%, transparent 51%);
-  border-bottom: 1px solid #aa8760;
-  transform-origin: top;
-  transition: transform 180ms ease;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  box-sizing: border-box;
+  padding: 20px 42px 10px 12px;
+  overflow: hidden;
+  background: #f8f1e5;
+  border: 1px solid #aa8760;
+  border-radius: 3px;
+  transition: top 180ms ease, box-shadow 180ms ease;
+}
+
+.envelope-stamp {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  display: block;
+  width: 20px;
+  height: 26px;
+  background: linear-gradient(135deg, #d7bb8c 0 48%, #c79862 49% 100%);
+  border: 1px dashed #7a5220;
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 2px #f8f1e5;
+}
+
+.envelope-flap {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  border-right: 80px solid transparent;
+  border-bottom: 32px solid #f8f1e5;
+  border-left: 80px solid transparent;
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .envelope time,
-.envelope span {
+.envelope-title {
   position: relative;
   z-index: 1;
   display: block;
@@ -157,19 +193,25 @@ function displayDate(sentAt: string) {
   font-size: 0.75rem;
 }
 
-.envelope span {
+.envelope-title {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .envelope--open {
-  box-shadow: 0 4px 0 #aa8760;
+  min-height: 106px;
   transform: translateY(-2px);
 }
 
-.envelope--open::before {
-  transform: rotateX(165deg);
+.envelope--open .envelope-body {
+  top: 32px;
+  box-shadow: 0 4px 0 #aa8760;
+}
+
+.envelope--open .envelope-flap {
+  opacity: 1;
+  transform: translateX(-50%);
 }
 
 .envelope:focus-visible,
@@ -234,6 +276,6 @@ main hr {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .envelope, .envelope::before { transition: none; }
+  .envelope, .envelope-body, .envelope-flap { transition: none; }
 }
 </style>

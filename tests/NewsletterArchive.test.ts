@@ -30,6 +30,16 @@ describe('NewsletterArchive', () => {
     expect(wrapper.findAll('[data-testid="envelope-issue"]')[0].text()).toContain('最新一期')
   })
 
+  it('renders a decorative stamp on every envelope and an open flap only on the selected issue', () => {
+    const wrapper = mount(NewsletterArchive, { props: { newsletters: issues } })
+
+    const stamps = wrapper.findAll('.envelope-stamp')
+    expect(stamps).toHaveLength(issues.length)
+    expect(stamps.every((stamp) => stamp.attributes('aria-hidden') === 'true')).toBe(true)
+    expect(wrapper.findAll('.envelope--open .envelope-flap')).toHaveLength(1)
+    expect(wrapper.get('.envelope--open .envelope-flap').attributes('aria-hidden')).toBe('true')
+  })
+
   it('switches an issue and resets only the paper scroll', async () => {
     const wrapper = mount(NewsletterArchive, { props: { newsletters: issues } })
     const paper = wrapper.get('[data-testid="newsletter-content"]').element as HTMLElement
@@ -42,6 +52,8 @@ describe('NewsletterArchive', () => {
 
     expect(wrapper.text()).toContain('舊一期')
     expect(paper.scrollTop).toBe(0)
+    expect(wrapper.findAll('.envelope--open .envelope-flap')).toHaveLength(1)
+    expect(wrapper.findAll('[data-testid="envelope-issue"]')[1].classes()).toContain('envelope--open')
   })
 
   it('renders an empty state when there are no published issues', () => {
@@ -64,6 +76,14 @@ describe('NewsletterArchive', () => {
 
     expect(source).toMatch(/\.issue-nav\s*\{[^}]*overflow-y:\s*hidden;/s)
     expect(source).toMatch(/main\s*\{[^}]*overflow-x:\s*hidden;/s)
+  })
+
+  it('does not retain the diagonal envelope-fold style', () => {
+    const source = readFileSync('src/ui/NewsletterArchive.vue', 'utf8')
+
+    expect(source).toContain('.envelope-stamp')
+    expect(source).toContain('.envelope--open .envelope-flap')
+    expect(source).not.toContain('.envelope::before')
   })
 
   it('falls back to the complete subject when its title suffix is empty', () => {
