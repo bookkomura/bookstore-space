@@ -159,10 +159,8 @@ function fullDate(sentAt: string) {
           </div>
         </div>
 
-        <p class="salutation">親愛的村民，</p>
-
         <template v-for="(block, index) in selectedIssue.blocks" :key="index">
-          <p v-if="block.type === 'paragraph'">{{ block.text }}</p>
+          <p class="paragraph" v-if="block.type === 'paragraph'">{{ block.text }}</p>
 
           <figure v-else-if="block.type === 'image'" :class="index % 2 === 0 ? 'tilt-l' : 'tilt-r'">
             <div class="photo">
@@ -513,10 +511,8 @@ main:focus-visible,
   line-height: 1.5;
 }
 
-.salutation {
-  margin: 26px 0 0;
+.paragraph {
   font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
-  font-size: 1.05rem;
   color: #4a3b25;
 }
 
