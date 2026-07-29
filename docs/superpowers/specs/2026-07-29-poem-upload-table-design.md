@@ -22,7 +22,7 @@
 
 採用「新增靜態互動區＋Vue 全螢幕 iframe 覆蓋層」。
 
-- 新增固定 `poem-upload-1` 互動區，位置放在中央方桌的可行走側邊，與桌面碰撞區分離。
+- 新增固定 `poem-upload-1` 互動區，位置放在中央方桌的可行走側邊，與桌面碰撞區分離；場景顯示名稱為「拾字成詩」。
 - 加入新的 `poemUpload` 互動類型；Phaser 和既有 `EventBridge` 仍只負責偵測與派送互動事件，Vue 負責開關介面。
 - 新增 `PoemUploadOverlay` 元件，以全螢幕、無沙箱限制的 iframe 載入指定網址，讓檔案選取與上傳保有網站原生行為。
 - 覆蓋層只提供清楚的「關閉」控制；不提供另開分頁按鈕。
@@ -32,7 +32,7 @@
 ## 3. 互動與資料流
 
 1. `sceneLayout` 將 `poem-upload-1` 與其他靜態互動點一併建立，錨點位於中央方桌旁可抵達的位置。
-2. `interactionLabels` 為此固定互動點提供「詩集上傳」名稱。
+2. `interactionLabels` 為此固定互動點提供「拾字成詩」名稱。
 3. 玩家進入範圍後，沿用既有驚嘆號、名稱標籤、鍵盤 `E`、點擊標記與手機互動按鈕。
 4. Phaser 發出 `{ id: 'poem-upload-1', type: 'poemUpload' }`；Vue 設定 `showPoemUpload`，並發出 `ui:opened` 凍結場景控制。
 5. `PoemUploadOverlay` 以 iframe 全螢幕顯示詩集網站。iframe 不使用 `sandbox` 屬性，避免額外阻礙其上傳功能。
@@ -51,7 +51,7 @@
 ### 自動測試
 
 - 互動區建置結果包含唯一的 `poem-upload-1`，類型與中央方桌的位置正確。
-- 互動名稱對照包含固定文字「詩集上傳」。
+- 互動名稱對照包含固定文字「拾字成詩」。
 - 從 `poemUpload` 互動事件開啟覆蓋層，並傳入正確的 iframe URL。
 - 覆蓋層的關閉鍵與 `Escape` 都會卸載介面並送出既有 UI 關閉流程。
 - 覆蓋層開啟期間，Phaser 場景維持暫停輸入。
