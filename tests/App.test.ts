@@ -135,6 +135,34 @@ describe('App', () => {
     offClosed()
   })
 
+  it('opens 拾字成詩 in the overlay and releases the scene on close', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const opened = vi.fn()
+    const closed = vi.fn()
+    const offOpened = bridge.on('ui:opened', opened)
+    const offClosed = bridge.on('ui:closed', closed)
+    const wrapper = await mountApp()
+    bridge.emit('interact', { id: 'poem-upload-1', type: 'poemUpload' })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="poem-upload-frame"]').attributes('src')).toBe('https://paiwh-poem-display.hf.space/')
+    expect(opened).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="poem-upload-overlay"] [data-testid="close"]').trigger('click')
+    expect(wrapper.find('[data-testid="poem-upload-overlay"]').exists()).toBe(false)
+    expect(closed).toHaveBeenCalledOnce()
+    offOpened()
+    offClosed()
+  })
+
+  it('closes 拾字成詩 when Escape is pressed', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const wrapper = await mountApp()
+    bridge.emit('interact', { id: 'poem-upload-1', type: 'poemUpload' })
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="poem-upload-overlay"]').exists()).toBe(false)
+  })
+
   it('renders the zh-TW load error and does not start Phaser when loading fails', async () => {
     mocks.loadContent.mockRejectedValue(new Error('network unavailable'))
     const wrapper = await mountApp()

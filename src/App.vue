@@ -8,6 +8,7 @@ import { buildInteractionLabels } from './game/interactionLabels'
 import { buildInteractionZones } from './game/sceneLayout'
 import BookViewer from './ui/BookViewer.vue'
 import NewsletterArchive from './ui/NewsletterArchive.vue'
+import PoemUploadOverlay from './ui/PoemUploadOverlay.vue'
 import ShelfPanel from './ui/ShelfPanel.vue'
 import StoreInfoCard from './ui/StoreInfoCard.vue'
 import TouchControls from './ui/TouchControls.vue'
@@ -19,10 +20,11 @@ const activeShowcase = ref<Showcase | null>(null)
 const activeShelf = ref<Shelf | null>(null)
 const showInfo = ref(false)
 const showArchive = ref(false)
+const showPoemUpload = ref(false)
 const currentZone = ref<BridgeEvents['zone:enter'] | null>(null)
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const uiOpen = computed(
-  () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value || showArchive.value),
+  () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value || showArchive.value || showPoemUpload.value),
 )
 
 let game: ReturnType<typeof createGame> | null = null
@@ -43,6 +45,8 @@ function openInteraction({ id, type }: BridgeEvents['interact']) {
     showInfo.value = true
   } else if (type === 'archive') {
     showArchive.value = true
+  } else if (type === 'poemUpload') {
+    showPoemUpload.value = true
   }
 
   if (uiOpen.value) bridge.emit('ui:opened')
@@ -96,6 +100,7 @@ function closeAll() {
   activeShelf.value = null
   showInfo.value = false
   showArchive.value = false
+  showPoemUpload.value = false
   bridge.emit('ui:closed')
 }
 </script>
@@ -120,6 +125,7 @@ function closeAll() {
       :newsletters="content.newsletters"
       @close="closeAll"
     />
+    <PoemUploadOverlay v-if="showPoemUpload" @close="closeAll" />
   </template>
 </template>
 
