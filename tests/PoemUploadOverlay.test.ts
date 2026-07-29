@@ -12,6 +12,18 @@ describe('PoemUploadOverlay', () => {
     expect(getComputedStyle(wrapper.get('[data-testid="poem-upload-overlay"]').element).position).toBe('fixed')
   })
 
+  it('shows the 墨跡成詩 loading layer until the upload frame has loaded', async () => {
+    const wrapper = mount(PoemUploadOverlay)
+
+    expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('正在鋪開詩頁⋯⋯')
+    expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('拾')
+    expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('詩')
+
+    await wrapper.get('[data-testid="poem-upload-frame"]').trigger('load')
+
+    expect(wrapper.find('[data-testid="poem-upload-loading"]').exists()).toBe(false)
+  })
+
   it('emits close when its close button is clicked', async () => {
     const wrapper = mount(PoemUploadOverlay)
     await wrapper.get('[data-testid="close"]').trigger('click')
