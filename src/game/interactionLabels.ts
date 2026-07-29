@@ -14,6 +14,7 @@ export function buildInteractionLabels(
     ),
     'info-1': '營業資訊',
     'archive-1': '小村碎碎念',
+    'poem-upload-1': '拾字成詩',
   })
 }
 

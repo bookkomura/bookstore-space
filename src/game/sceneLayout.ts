@@ -57,6 +57,11 @@ export const STATIC_INTERACTION_ZONES: readonly Zone[] = [
     x: 200, y: 510, width: 72, height: 160,
     anchorX: 140, anchorY: 550,
   },
+  {
+    id: 'poem-upload-1', type: 'poemUpload',
+    x: 630, y: 570, width: 220, height: 64,
+    anchorX: 742, anchorY: 630,
+  },
 ] as const
 
 export function buildInteractionZones(

@@ -16,7 +16,7 @@ describe('sceneLayout', () => {
     expect(PLAYER_SPAWN).toEqual({ x: 1205, y: 250 })
   })
 
-  it('定義五商品、店長選書、營業資訊與檔案室共八區', () => {
+  it('定義五商品、店長選書、營業資訊、檔案室與詩集桌共九區', () => {
     expect(INTERACTION_ZONES.map((zone) => zone.id)).toEqual([
       'showcase-1',
       'showcase-2',
@@ -26,7 +26,20 @@ describe('sceneLayout', () => {
       'shelf-1',
       'info-1',
       'archive-1',
+      'poem-upload-1',
     ])
+  })
+
+  it('places poem upload above the middle square table', () => {
+    expect(STATIC_INTERACTION_ZONES.find((zone) => zone.id === 'poem-upload-1')).toEqual(
+      { id: 'poem-upload-1', type: 'poemUpload', x: 630, y: 570, width: 220, height: 64, anchorX: 742, anchorY: 630 },
+    )
+  })
+
+  it('keeps poem upload reachable above the table collision', () => {
+    const zone = STATIC_INTERACTION_ZONES.find((item) => item.id === 'poem-upload-1')!
+    const table = COLLISION_RECTS.find((item) => item.id === 'table-lower-middle')!
+    expect(zone.y + zone.height).toBeLessThanOrEqual(table.y)
   })
 
   it('has one archive entry beside the left bookshelf', () => {

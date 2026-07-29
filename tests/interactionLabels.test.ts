@@ -21,6 +21,10 @@ describe('interactionLabels', () => {
     expect(buildInteractionLabels(content)['archive-1']).toBe('小村碎碎念')
   })
 
+  it('labels the poem upload table', () => {
+    expect(buildInteractionLabels(content)['poem-upload-1']).toBe('拾字成詩')
+  })
+
   it('十一至二十字分成兩行', () => {
     expect(formatMarkerLabel('一二三四五六七八九十一二')).toBe(
       '一二三四五六七八九十\n一二',
