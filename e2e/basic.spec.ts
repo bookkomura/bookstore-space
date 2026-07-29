@@ -36,6 +36,17 @@ test('interact 事件開啟翻書、翻頁、關閉', async ({ page }) => {
   await expect(viewer).not.toBeVisible()
 })
 
+test('拾字成詩以同頁全螢幕介面開啟並可關閉', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
+  await page.evaluate(() => window.__bridge.emit('interact', { id: 'poem-upload-1', type: 'poemUpload' }))
+  const overlay = page.getByTestId('poem-upload-overlay')
+  await expect(overlay).toBeVisible()
+  await expect(page.getByTestId('poem-upload-frame')).toHaveAttribute('src', 'https://paiwh-poem-display.hf.space/')
+  await page.getByTestId('close').click()
+  await expect(overlay).not.toBeVisible()
+})
+
 test('創作者入口常駐，最後一頁與 320px 畫面都維持穩定版面', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
