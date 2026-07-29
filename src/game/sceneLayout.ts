@@ -59,8 +59,8 @@ export const STATIC_INTERACTION_ZONES: readonly Zone[] = [
   },
   {
     id: 'poem-upload-1', type: 'poemUpload',
-    x: 630, y: 570, width: 220, height: 64,
-    anchorX: 742, anchorY: 630,
+    x: 630, y: 590, width: 220, height: 64,
+    anchorX: 730, anchorY: 690,
   },
 ] as const
 

@@ -16,8 +16,8 @@ const zones: Zone[] = [
 
 describe('findNearestZone', () => {
   it('accepts poemUpload as an interaction zone type', () => {
-    const zone: Zone = { id: 'poem-upload-1', type: 'poemUpload', x: 630, y: 570, width: 220, height: 64, anchorX: 742, anchorY: 630 }
-    expect(findNearestZone(742, 600, [zone])).toEqual(zone)
+    const zone: Zone = { id: 'poem-upload-1', type: 'poemUpload', x: 630, y: 590, width: 220, height: 64, anchorX: 730, anchorY: 690 }
+    expect(findNearestZone(730, 600, [zone])).toEqual(zone)
   })
 
   it('accepts archive as an interaction zone type', () => {

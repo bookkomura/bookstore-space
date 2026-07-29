@@ -30,16 +30,20 @@ describe('sceneLayout', () => {
     ])
   })
 
-  it('places poem upload above the middle square table', () => {
+  it('places poem upload at the middle square table', () => {
     expect(STATIC_INTERACTION_ZONES.find((zone) => zone.id === 'poem-upload-1')).toEqual(
-      { id: 'poem-upload-1', type: 'poemUpload', x: 630, y: 570, width: 220, height: 64, anchorX: 742, anchorY: 630 },
+      { id: 'poem-upload-1', type: 'poemUpload', x: 630, y: 590, width: 220, height: 64, anchorX: 730, anchorY: 690 },
     )
   })
 
-  it('keeps poem upload reachable above the table collision', () => {
+  it('keeps the poem upload approach reachable while anchoring its marker on the table', () => {
     const zone = STATIC_INTERACTION_ZONES.find((item) => item.id === 'poem-upload-1')!
     const table = COLLISION_RECTS.find((item) => item.id === 'table-lower-middle')!
-    expect(zone.y + zone.height).toBeLessThanOrEqual(table.y)
+    expect(zone.y).toBeLessThan(table.y)
+    expect(zone.anchorX).toBeGreaterThanOrEqual(table.x)
+    expect(zone.anchorX).toBeLessThanOrEqual(table.x + table.width)
+    expect(zone.anchorY).toBeGreaterThanOrEqual(table.y)
+    expect(zone.anchorY).toBeLessThanOrEqual(table.y + table.height)
   })
 
   it('has one archive entry beside the left bookshelf', () => {
