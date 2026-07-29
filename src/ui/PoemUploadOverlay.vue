@@ -20,7 +20,7 @@ function handleFrameLoad() {
           <span>拾</span><span>字</span><span>成</span><span>詩</span>
         </div>
         <div class="ink-line" aria-hidden="true" />
-        <p>正在鋪開詩頁⋯⋯</p>
+        <p class="loading-copy" data-testid="poem-upload-loading-copy">正在鋪開詩頁⋯⋯</p>
       </div>
     </Transition>
     <iframe data-testid="poem-upload-frame" :src="poemUploadUrl" title="拾字成詩上傳工具" @load="handleFrameLoad" />
@@ -74,7 +74,7 @@ button {
   display: flex;
   gap: 0.45em;
   justify-content: center;
-  font-family: serif;
+  font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
   font-size: clamp(2.5rem, 8vw, 4.5rem);
   letter-spacing: 0.15em;
 }
@@ -102,6 +102,10 @@ button {
   margin: 0;
   font-size: 0.95rem;
   letter-spacing: 0.18em;
+}
+
+.loading-copy {
+  font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
 }
 
 .ink-loading-leave-active { transition: opacity 180ms ease-out; }

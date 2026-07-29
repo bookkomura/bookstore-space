@@ -18,6 +18,9 @@ describe('PoemUploadOverlay', () => {
     expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('正在鋪開詩頁⋯⋯')
     expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('拾')
     expect(wrapper.get('[data-testid="poem-upload-loading"]').text()).toContain('詩')
+    const copy = wrapper.get('[data-testid="poem-upload-loading-copy"]')
+    expect(copy.text()).toBe('正在鋪開詩頁⋯⋯')
+    expect(copy.classes()).toContain('loading-copy')
 
     await wrapper.get('[data-testid="poem-upload-frame"]').trigger('load')
 
