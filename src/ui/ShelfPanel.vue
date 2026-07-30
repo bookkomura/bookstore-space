@@ -13,12 +13,14 @@ const emit = defineEmits<{ close: [] }>()
       <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
     </header>
     <ul>
-      <li v-for="book in shelf.books" :key="book.title">
+      <li v-for="(book, index) in shelf.books" :key="book.title">
         <ImageFrame
           :src="book.cover"
           :alt="book.title"
           fit="cover"
           loading="lazy"
+          density="compact"
+          :delay="index * 350"
           class="book-cover"
         />
         <div>

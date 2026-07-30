@@ -106,31 +106,33 @@ function onTouchEnd(event: TouchEvent) {
 }
 
 header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 8.5rem 44px;
-  gap: 12px;
+  display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 header h2 {
-  grid-column: 1;
+  flex: 1;
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  font-size: 1.2rem;
+  font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 header button {
-  grid-column: 3;
   width: 44px;
   height: 44px;
   padding: 0;
   color: inherit;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   background: none;
   border: none;
+  opacity: 0.55;
 }
 
 .page {
@@ -184,29 +186,32 @@ footer button:disabled {
 }
 
 .creator {
-  grid-column: 2;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 8.5rem;
-  height: 44px;
-  padding: 0 12px;
-  box-sizing: border-box;
-  color: #f0b860;
-  font-size: 0.875rem;
-  font-weight: 600;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 2px;
+  color: rgba(240, 184, 96, 0.78);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
   white-space: nowrap;
   text-decoration: none;
-  background: transparent;
-  border: 1px solid #f0b860;
-  border-radius: 999px;
-  transition: color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  border: 0;
+  border-bottom: 1px solid rgba(240, 184, 96, 0.3);
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.creator::after {
+  content: "↗";
+  font-size: 0.72rem;
 }
 
 .creator--emphasized {
-  color: #21170a;
-  background: #f0b860;
-  box-shadow: 0 0 0 4px rgba(240, 184, 96, 0.18);
+  color: #f0b860;
+  font-weight: 500;
+  background: none;
+  border-bottom-color: #f0b860;
+  box-shadow: none;
 }
 
 .creator:focus-visible {
@@ -216,17 +221,12 @@ footer button:disabled {
 
 @media (prefers-reduced-motion: no-preference) {
   .creator--emphasized {
-    animation: creator-emphasis 240ms ease-out both;
+    animation: creator-rule 700ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
   }
 
-  @keyframes creator-emphasis {
-    from {
-      opacity: 0.72;
-    }
-
-    to {
-      opacity: 1;
-    }
+  @keyframes creator-rule {
+    from { border-bottom-color: rgba(240, 184, 96, 0.2); }
+    to { border-bottom-color: #f0b860; }
   }
 }
 

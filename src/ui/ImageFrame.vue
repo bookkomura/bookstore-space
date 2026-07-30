@@ -6,9 +6,15 @@ const props = withDefaults(defineProps<{
   alt: string
   fit?: 'contain' | 'cover'
   loading?: 'eager' | 'lazy'
+  /** 書封等小尺寸用 compact：行距與模糊縮小 */
+  density?: 'default' | 'compact'
+  /** 同一排錯開節奏，單位 ms */
+  delay?: number
 }>(), {
   fit: 'contain',
   loading: 'eager',
+  density: 'default',
+  delay: 0,
 })
 
 const emit = defineEmits<{ error: [] }>()
@@ -19,6 +25,10 @@ const imageClass = computed(() => [
   `image--${props.fit}`,
   { 'image--loading': status.value === 'loading' },
 ])
+
+const loaderStyle = computed(() => ({
+  '--sweep-delay': `${props.delay}ms`,
+}))
 
 function fail() {
   status.value = 'error'
@@ -35,18 +45,17 @@ watch(
 
 <template>
   <div class="frame" data-testid="image-frame">
-    <svg
+    <div
       v-if="status === 'loading'"
       class="loader"
+      :class="`loader--${density}`"
+      :style="loaderStyle"
       data-testid="image-loader"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
       aria-hidden="true"
-      focusable="false"
     >
-      <rect class="loader-base" x="2" y="2" width="96" height="96" rx="1" />
-      <rect class="loader-trace" x="5" y="5" width="90" height="90" rx="1" pathLength="100" />
-    </svg>
+      <div class="loader-grain" />
+      <div class="loader-sweep" />
+    </div>
     <img
       v-if="status !== 'error'"
       :src="src"
@@ -84,34 +93,72 @@ watch(
   position: absolute;
   z-index: 1;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
   pointer-events: none;
 }
 
-.loader-base {
-  fill: none;
-  stroke: rgba(245, 239, 224, 0.16);
-  stroke-width: 1;
+/* 紙面行距紋理 */
+.loader-grain {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(245, 239, 224, 0.05) 0 1px,
+    transparent 1px 15px
+  );
+  animation: paper-grain 3.4s ease-in-out infinite;
 }
 
-.loader-trace {
-  fill: none;
-  stroke: #f0b860;
-  stroke-width: 1.5;
-  stroke-dasharray: 28 72;
-  stroke-linecap: square;
-  animation: trace-frame 1.4s linear infinite;
+/* 檯燈掠過的暖光帶 */
+.loader-sweep {
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  width: 42%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(240, 184, 96, 0.16) 42%,
+    rgba(255, 244, 214, 0.26) 55%,
+    transparent
+  );
+  filter: blur(7px);
+  animation: paper-sweep 1.9s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
+  animation-delay: var(--sweep-delay, 0ms);
 }
 
-@keyframes trace-frame {
-  to { stroke-dashoffset: -100; }
+.loader--compact .loader-grain {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(245, 239, 224, 0.05) 0 1px,
+    transparent 1px 11px
+  );
+}
+
+.loader--compact .loader-sweep {
+  width: 44%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(240, 184, 96, 0.18) 42%,
+    rgba(255, 244, 214, 0.3) 55%,
+    transparent
+  );
+  filter: blur(5px);
+}
+
+@keyframes paper-sweep {
+  0% { transform: translateX(-130%); }
+  100% { transform: translateX(330%); }
+}
+
+@keyframes paper-grain {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loader-trace {
-    stroke-dasharray: 100 0;
-    animation: none;
-  }
+  .loader-grain { animation: none; opacity: 0.7; }
+  .loader-sweep { animation: none; opacity: 0.5; transform: translateX(60%); }
 }
 </style>
