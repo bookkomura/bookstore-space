@@ -6,6 +6,10 @@ import { touchInput } from './inputState'
 import type { InteractionLabels } from './interactionLabels'
 import { computeVelocity } from './movement'
 import {
+  selectPlayerAppearance,
+  type PlayerAppearance,
+} from './playerAppearance'
+import {
   facingFromVelocity,
   idleFrame,
   walkAnimation,
@@ -31,10 +35,12 @@ export class StoreScene extends Phaser.Scene {
   private uiOpen = false
   private facing: Facing = 'down'
   private bridgeUnsubscribers: (() => void)[] = []
+  private appearance!: PlayerAppearance
 
   constructor(
     private readonly labels: InteractionLabels,
     private readonly interactionZones: readonly Zone[],
+    private readonly selectAppearance: () => PlayerAppearance = selectPlayerAppearance,
   ) {
     super('store')
   }
@@ -43,6 +49,8 @@ export class StoreScene extends Phaser.Scene {
     this.removeListeners()
     this.currentZone = null
     this.uiOpen = false
+    this.facing = 'down'
+    this.appearance = this.selectAppearance()
 
     this.add.image(0, 0, 'store-background').setOrigin(0).setDepth(0)
     this.physics.world.setBounds(0, 0, WORLD_SIZE.width, WORLD_SIZE.height)
@@ -64,11 +72,11 @@ export class StoreScene extends Phaser.Scene {
     }
 
     this.player = this.physics.add
-      .sprite(PLAYER_SPAWN.x, PLAYER_SPAWN.y, 'player', 0)
+      .sprite(PLAYER_SPAWN.x, PLAYER_SPAWN.y, this.appearance.textureKey, 0)
       .setScale(PLAYER_SCALE)
       .setDepth(10)
       .setCollideWorldBounds(true)
-    this.createPlayerAnimations()
+    this.createPlayerAnimations(this.appearance.textureKey)
     this.player.setFrame(idleFrame(this.facing))
 
     const body = this.player.body as Phaser.Physics.Arcade.Body
@@ -145,13 +153,13 @@ export class StoreScene extends Phaser.Scene {
     })
   }
 
-  private createPlayerAnimations() {
+  private createPlayerAnimations(textureKey: string) {
     for (const facing of ['down', 'left', 'right', 'up'] as const) {
-      const key = walkAnimation(facing)
+      const key = walkAnimation(textureKey, facing)
       if (this.anims.exists(key)) continue
       this.anims.create({
         key,
-        frames: walkFrames(facing).map((frame) => ({ key: 'player', frame })),
+        frames: walkFrames(facing).map((frame) => ({ key: textureKey, frame })),
         frameRate: 8,
         repeat: -1,
       })
@@ -165,7 +173,7 @@ export class StoreScene extends Phaser.Scene {
       this.player.setFrame(idleFrame(this.facing))
       return
     }
-    this.player.anims.play(walkAnimation(this.facing), true)
+    this.player.anims.play(walkAnimation(this.appearance.textureKey, this.facing), true)
   }
 
   update() {

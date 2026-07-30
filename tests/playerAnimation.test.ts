@@ -23,12 +23,12 @@ describe('playerAnimation', () => {
     expect(facingFromVelocity(-80, 80, 'up')).toBe('down')
   })
 
-  it('四方向對應每列第一格與 walk key', () => {
+  it('四方向對應每列第一格與角色專屬 walk key', () => {
     expect(idleFrame('down')).toBe(0)
     expect(idleFrame('left')).toBe(4)
     expect(idleFrame('right')).toBe(8)
     expect(idleFrame('up')).toBe(12)
-    expect(walkAnimation('up')).toBe('walk-up')
+    expect(walkAnimation('player-orange-cat', 'up')).toBe('player-orange-cat-walk-up')
   })
 
   it('四方向使用正確的四幀走路循環', () => {

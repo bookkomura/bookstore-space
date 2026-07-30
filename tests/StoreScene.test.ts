@@ -29,6 +29,7 @@ vi.mock('phaser', () => ({
 }))
 
 import { StoreScene } from '../src/game/StoreScene'
+import { PLAYER_APPEARANCES } from '../src/game/playerAppearance'
 import { buildInteractionZones } from '../src/game/sceneLayout'
 
 function chain() {
@@ -181,5 +182,39 @@ describe('StoreScene', () => {
     scene.create()
 
     expect(scene.markers.has('dynamic-showcase')).toBe(true)
+  })
+
+  it('進入時只抽選一次外觀，重新建立場景時才重新抽選', () => {
+    const selectAppearance = vi
+      .fn()
+      .mockReturnValueOnce(PLAYER_APPEARANCES[4])
+      .mockReturnValueOnce(PLAYER_APPEARANCES[1])
+    const sceneInstance = new StoreScene({}, [], selectAppearance)
+    const { player, scene } = createSceneFixture(sceneInstance)
+
+    scene.create()
+
+    expect(selectAppearance).toHaveBeenCalledTimes(1)
+    expect(scene.physics.add.sprite).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Number),
+      'player-orange-cat',
+      0,
+    )
+    expect(player.setScale).toHaveBeenCalledWith(0.72)
+    expect(player.body.setSize).toHaveBeenCalledWith(64, 40)
+    expect(player.body.setOffset).toHaveBeenCalledWith(96, 196)
+
+    scene.update()
+    expect(selectAppearance).toHaveBeenCalledTimes(1)
+
+    scene.create()
+    expect(selectAppearance).toHaveBeenCalledTimes(2)
+    expect(scene.physics.add.sprite).toHaveBeenLastCalledWith(
+      expect.any(Number),
+      expect.any(Number),
+      'player-visitor-female',
+      0,
+    )
   })
 })

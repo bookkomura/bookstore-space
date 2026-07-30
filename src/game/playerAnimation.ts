@@ -21,8 +21,8 @@ export function idleFrame(facing: Facing): number {
   return ROW_START[facing]
 }
 
-export function walkAnimation(facing: Facing): string {
-  return `walk-${facing}`
+export function walkAnimation(textureKey: string, facing: Facing): string {
+  return `${textureKey}-walk-${facing}`
 }
 
 export function walkFrames(facing: Facing): number[] {
