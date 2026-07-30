@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { Showcase } from '../content/schema'
+import ImageFrame from './ImageFrame.vue'
 
 const props = defineProps<{ showcase: Showcase }>()
 const emit = defineEmits<{ close: [] }>()
 
 const pageIndex = ref(0)
-const failed = ref<Record<number, boolean>>({})
 const retryKey = ref(0)
 
 const page = computed(() => props.showcase.pages[pageIndex.value])
@@ -21,7 +21,6 @@ function prev() {
 }
 
 function retry() {
-  failed.value[pageIndex.value] = false
   retryKey.value++
 }
 
@@ -68,17 +67,20 @@ function onTouchEnd(event: TouchEvent) {
     </header>
 
     <div class="page">
-      <img
-        v-if="!failed[pageIndex]"
+      <ImageFrame
         :key="`${pageIndex}-${retryKey}`"
         :src="page.image"
         :alt="page.caption"
-        @error="failed[pageIndex] = true"
+        fit="contain"
+        class="page-image"
       >
-      <div v-else class="placeholder">
-        <p>圖片載入失敗</p>
-        <button data-testid="retry" @click="retry">重試</button>
-      </div>
+        <template #error>
+          <div class="placeholder">
+            <p>圖片載入失敗</p>
+            <button data-testid="retry" @click="retry">重試</button>
+          </div>
+        </template>
+      </ImageFrame>
       <p class="caption">{{ page.caption }}</p>
     </div>
 
@@ -140,10 +142,10 @@ header button {
   min-height: 0;
 }
 
-.page img {
-  max-width: 100%;
-  max-height: 70%;
-  object-fit: contain;
+.page-image {
+  width: min(100%, 42rem);
+  height: min(70%, 34rem);
+  min-height: 15rem;
   border-radius: 4px;
 }
 
