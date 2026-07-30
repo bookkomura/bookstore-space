@@ -70,6 +70,17 @@ describe('BookViewer', () => {
     expect(w.find('img').exists()).toBe(true)
   })
 
+  it('每一頁圖片都在完成載入前顯示細框 Loading', async () => {
+    const w = mount(BookViewer, { props: { showcase } })
+
+    expect(w.find('[data-testid="image-loader"]').exists()).toBe(true)
+    await w.get('[data-testid="image"]').trigger('load')
+    expect(w.find('[data-testid="image-loader"]').exists()).toBe(false)
+
+    await w.get('[data-testid="next"]').trigger('click')
+    expect(w.find('[data-testid="image-loader"]').exists()).toBe(true)
+  })
+
   it('點關閉 emit close', async () => {
     const w = mount(BookViewer, { props: { showcase } })
     await w.get('[data-testid="close"]').trigger('click')

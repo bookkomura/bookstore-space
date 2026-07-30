@@ -19,11 +19,22 @@ describe('ShelfPanel', () => {
     expect(w.text()).toContain('我可能錯了')
     expect(w.text()).toContain('江湖入門')
     expect(w.findAll('img')).toHaveLength(2)
+    expect(w.findAll('img')[0].attributes('loading')).toBe('lazy')
   })
 
   it('點關閉 emit close', async () => {
     const w = mount(ShelfPanel, { props: { shelf } })
     await w.get('[data-testid="close"]').trigger('click')
     expect(w.emitted('close')).toHaveLength(1)
+  })
+
+  it('每本封面獨立完成載入，不等待其他封面', async () => {
+    const w = mount(ShelfPanel, { props: { shelf } })
+
+    expect(w.findAll('[data-testid="image-loader"]')).toHaveLength(2)
+    await w.findAll('[data-testid="image"]')[0].trigger('load')
+
+    expect(w.findAll('[data-testid="image-loader"]')).toHaveLength(1)
+    expect(w.findAll('[data-testid="image"]')[0].classes()).not.toContain('image--loading')
   })
 })

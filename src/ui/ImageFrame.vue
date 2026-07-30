@@ -5,8 +5,10 @@ const props = withDefaults(defineProps<{
   src: string
   alt: string
   fit?: 'contain' | 'cover'
+  loading?: 'eager' | 'lazy'
 }>(), {
   fit: 'contain',
+  loading: 'eager',
 })
 
 const emit = defineEmits<{ error: [] }>()
@@ -49,6 +51,7 @@ watch(
       v-if="status !== 'error'"
       :src="src"
       :alt="alt"
+      :loading="loading"
       :class="imageClass"
       data-testid="image"
       @load="status = 'loaded'"

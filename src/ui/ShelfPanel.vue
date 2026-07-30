@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Shelf } from '../content/schema'
+import ImageFrame from './ImageFrame.vue'
 
 defineProps<{ shelf: Shelf }>()
 const emit = defineEmits<{ close: [] }>()
@@ -13,7 +14,13 @@ const emit = defineEmits<{ close: [] }>()
     </header>
     <ul>
       <li v-for="book in shelf.books" :key="book.title">
-        <img :src="book.cover" :alt="book.title" loading="lazy" />
+        <ImageFrame
+          :src="book.cover"
+          :alt="book.title"
+          fit="cover"
+          loading="lazy"
+          class="book-cover"
+        />
         <div>
           <h3>{{ book.title }}</h3>
           <p>{{ book.note }}</p>
@@ -32,7 +39,7 @@ header { display: flex; justify-content: space-between; align-items: center; }
 header button { background: none; border: none; color: inherit; font-size: 1.5rem; padding: 8px; }
 ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 16px; }
 li { display: flex; gap: 12px; }
-li img { width: 80px; height: 112px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+li .book-cover { width: 80px; height: 112px; border-radius: 4px; flex-shrink: 0; }
 li h3 { margin: 0 0 4px; }
 li p { margin: 0; line-height: 1.5; opacity: 0.85; }
 </style>
