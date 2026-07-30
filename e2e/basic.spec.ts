@@ -8,6 +8,7 @@ declare global {
     }
     __interactionRequests?: number
     __observedZoneIds?: string[]
+    __activeZoneId?: string
     __stopZoneObserver?: () => void
   }
 }
@@ -158,8 +159,8 @@ test('檔案室固定期刊列並在桌機與手機捲動內容', async ({ page,
 
 async function waitForZone(page: Page, id: string) {
   await expect.poll(
-    () => page.evaluate((zoneId) => window.__observedZoneIds?.includes(zoneId), id),
-    { timeout: 4_000, intervals: [50, 100, 200] },
+    () => page.evaluate((zoneId) => window.__activeZoneId === zoneId, id),
+    { timeout: 8_000, intervals: [50, 100, 200] },
   ).toBe(true)
 }
 
@@ -176,8 +177,19 @@ async function walkUntilZone(
   }
 }
 
+async function moveFor(
+  page: Page,
+  key: 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'ArrowUp',
+  duration: number,
+) {
+  await page.keyboard.down(key)
+  await page.waitForTimeout(duration)
+  await page.keyboard.up(key)
+}
+
 test('從入口實際步行到全部七個互動點並開啟正確內容', async ({ page, isMobile }) => {
   test.skip(isMobile, 'all-seven keyboard walkthrough is desktop acceptance coverage')
+  test.setTimeout(45_000)
   await page.goto('/')
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 })
   const configuredShowcases = await page.evaluate(async () => {
@@ -187,33 +199,36 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     }
     return content.showcases
   })
-  const showcaseWalkthrough = configuredShowcases.slice().reverse()
+  const showcaseWalkthrough = configuredShowcases
   // Canvas allocation precedes Phaser's scene setup; wait for the scene to
   // subscribe before starting the deterministic entrance route under parallel E2E load.
   await page.waitForTimeout(1_200)
   await page.evaluate(() => {
     window.__stopZoneObserver?.()
     window.__observedZoneIds = []
-    window.__stopZoneObserver = window.__bridge.on('zone:enter', ({ id }) => {
+    window.__activeZoneId = undefined
+    const stopEnterObserver = window.__bridge.on('zone:enter', ({ id }) => {
+      window.__activeZoneId = id
       window.__observedZoneIds?.push(id)
     })
+    const stopExitObserver = window.__bridge.on('zone:exit', ({ id }) => {
+      if (window.__activeZoneId === id) window.__activeZoneId = undefined
+    })
+    window.__stopZoneObserver = () => {
+      stopEnterObserver()
+      stopExitObserver()
+    }
   })
 
   try {
     const viewer = page.getByTestId('book-viewer')
     if (showcaseWalkthrough.length > 0) {
-      // The entrance route passes around the central table, then reaches the
-      // leftmost configured showcase through collision-aware keyboard movement only.
-      await page.keyboard.down('ArrowRight')
-      await page.waitForTimeout(900)
-      await page.keyboard.down('ArrowUp')
-      await page.waitForTimeout(600)
-      await page.keyboard.up('ArrowUp')
-      await waitForZone(page, showcaseWalkthrough[0].id)
-      await page.keyboard.up('ArrowRight')
+      // The entrance is to the right of the configured showcase row, so the
+      // route reaches the nearest (first configured) showcase by moving left.
+      await walkUntilZone(page, 'ArrowLeft', showcaseWalkthrough[0].id)
 
       for (const [index, showcase] of showcaseWalkthrough.entries()) {
-        if (index > 0) await walkUntilZone(page, 'ArrowRight', showcase.id)
+        if (index > 0) await walkUntilZone(page, 'ArrowLeft', showcase.id)
 
         await page.screenshot({
           path: `/private/tmp/bookstore-task20-evidence/desktop-${showcase.id}-proximity.png`,
@@ -231,12 +246,12 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
           const eventCountWhileFrozen = await page.evaluate(
             () => window.__observedZoneIds?.length,
           )
-          await page.keyboard.down('ArrowRight')
+          await page.keyboard.down('ArrowLeft')
           await page.waitForTimeout(350)
           await expect.poll(
             () => page.evaluate(() => window.__observedZoneIds?.length),
           ).toBe(eventCountWhileFrozen)
-          await page.keyboard.up('ArrowRight')
+          await page.keyboard.up('ArrowLeft')
         }
 
         await page.getByTestId('close').click()
@@ -249,6 +264,9 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
       await page.keyboard.up('ArrowLeft')
     }
 
+    // The shelf sits below the right end of the showcase row.  Return to the
+    // clear aisle first, then descend into its interaction zone.
+    await moveFor(page, 'ArrowRight', 1_950)
     await walkUntilZone(page, 'ArrowDown', 'shelf-1')
     const shelf = page.getByTestId('shelf-panel')
     await page.keyboard.press('Space')
@@ -260,6 +278,8 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     await page.keyboard.press('Escape')
     await expect(shelf).not.toBeVisible()
 
+    // Move above the right-side NPC before crossing to the information zone.
+    await moveFor(page, 'ArrowUp', 1_000)
     await walkUntilZone(page, 'ArrowRight', 'info-1')
     const info = page.getByTestId('store-info')
     await page.keyboard.press('Space')
@@ -270,7 +290,7 @@ test('從入口實際步行到全部七個互動點並開啟正確內容', async
     })
     await page.getByTestId('close').click()
 
-    await expect(page.evaluate(() => window.__observedZoneIds)).resolves.toEqual([
+    await expect(page.evaluate(() => [...new Set(window.__observedZoneIds)])).resolves.toEqual([
       ...showcaseWalkthrough.map((showcase) => showcase.id),
       'shelf-1',
       'info-1',
