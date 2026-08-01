@@ -14,7 +14,7 @@ mapper exposes it as `Showcase.creatorLink`, and `BookViewer` renders one text
 anchor in its header. The anchor appears on every page and receives a special
 visual state on the final page.
 
-## CMS fields and compatibility
+## CMS fields
 
 Add four optional Link fields to the Storyblok `showcase` component:
 
@@ -23,19 +23,15 @@ Add four optional Link fields to the Storyblok `showcase` component:
 - `threads`
 - `website`
 
-Keep the existing `creator_link` field temporarily for compatibility with
-already-published showcases. Mapping uses the following rules:
+Delete the existing `creator_link` field from the Storyblok component. There is
+no compatibility fallback: existing values in that field are intentionally not
+mapped or displayed.
 
-1. Map each non-empty new field to its matching platform.
-2. If `website` is empty and `creator_link` is non-empty, map `creator_link` as
-   the personal website.
-3. If both `website` and `creator_link` are present, use `website` and do not
-   render a duplicate legacy link.
-4. If none of the four resolved links exists, omit the creator-links value.
+Map each non-empty new field to its matching platform. If none of the four new
+links exists, omit the creator-links value.
 
-The compatibility rule lives in the Storyblok mapper. Downstream UI receives
-one normalized representation and does not need to know whether a website URL
-came from the new or legacy field.
+The Storyblok mapper does not read `creator_link`. Downstream UI receives only
+the normalized values from the four new fields.
 
 ## Content model
 
@@ -120,8 +116,7 @@ Storyblok mapping tests verify that:
 
 - Each new field maps to its matching normalized property.
 - Empty fields are omitted.
-- `creator_link` becomes `website` only when the new `website` field is empty.
-- A new `website` value takes precedence over `creator_link`.
+- A legacy `creator_link` value is ignored and does not create a website link.
 
 Component tests verify that:
 
@@ -140,13 +135,11 @@ horizontal overflow.
 ## Documentation
 
 Update the Storyblok setup instructions in `README.md` to list the four new
-optional Link fields and identify `creator_link` as a temporary legacy fallback
-for `website`.
+optional Link fields and remove `creator_link` from the documented component.
 
 ## Scope
 
 This change covers the showcase creator-link data model, Storyblok mapping,
 viewer header UI, relevant content documentation, and tests. It does not add
 social links to shelves, store information, newsletters, or other overlays. It
-does not automatically migrate or delete existing Storyblok `creator_link`
-values.
+does not migrate existing Storyblok `creator_link` values into any new field.
