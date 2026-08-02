@@ -69,6 +69,8 @@ export function mapStoriesToBundle(rawStories: unknown[]): ContentBundle {
       }
     })
 
+  showcases.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
+
   const shelves = stories
     .filter((story) => story.content.component === 'shelf')
     .map((story) => {

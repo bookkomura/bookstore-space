@@ -61,6 +61,21 @@ const newerNewsletter = {
 }
 
 describe('mapStoriesToBundle', () => {
+  it('依 showcase ID 排序，讓 showcase-1 至 showcase-3 由右往左排列', () => {
+    const showcase2 = structuredClone(stories[0])
+    showcase2.slug = 'showcase-2'
+    const showcase3 = structuredClone(stories[0])
+    showcase3.slug = 'showcase-3'
+
+    const bundle = mapStoriesToBundle([showcase3, ...stories.slice(1), showcase2, stories[0]])
+
+    expect(bundle.showcases.map((showcase) => showcase.id)).toEqual([
+      'showcase-1',
+      'showcase-2',
+      'showcase-3',
+    ])
+  })
+
   it('maps newsletter stories in descending sentAt order without sourceMessageId', () => {
     const bundle = mapStoriesToBundle([...stories, olderNewsletter, newerNewsletter])
 
