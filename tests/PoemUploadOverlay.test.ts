@@ -9,6 +9,9 @@ describe('PoemUploadOverlay', () => {
     expect(frame.attributes()).toMatchObject({ src: 'https://paiwh-poem-display.hf.space/', title: '拾字成詩上傳工具' })
     expect(frame.attributes('sandbox')).toBeUndefined()
     expect(wrapper.get('[data-testid="close"]').attributes('aria-label')).toBe('關閉拾字成詩')
+    expect(wrapper.get('[data-testid="close"]').classes()).toContain('overlay-close')
+    expect(wrapper.get('[data-testid="close"]').classes()).toContain('overlay-close--dark')
+    expect(wrapper.get('[data-testid="close"]').classes()).toContain('poem-upload-close')
     expect(getComputedStyle(wrapper.get('[data-testid="poem-upload-overlay"]').element).position).toBe('fixed')
   })
 

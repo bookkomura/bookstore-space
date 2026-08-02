@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { Showcase } from '../content/schema'
 import ImageFrame from './ImageFrame.vue'
+import OverlayHeader from './OverlayHeader.vue'
 
 const props = defineProps<{ showcase: Showcase }>()
 const emit = defineEmits<{ close: [] }>()
@@ -51,8 +52,7 @@ function onTouchEnd(event: TouchEvent) {
 
 <template>
   <div class="overlay" data-testid="book-viewer" @touchstart="onTouchStart" @touchend="onTouchEnd">
-    <header>
-      <h2>{{ showcase.title }}</h2>
+    <OverlayHeader :title="showcase.title" @close="emit('close')">
       <a
         v-if="showcase.creatorLink"
         data-testid="creator-link"
@@ -63,8 +63,7 @@ function onTouchEnd(event: TouchEvent) {
         rel="noopener"
         aria-label="認識創作者（在新分頁開啟）"
       >認識創作者</a>
-      <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
-    </header>
+    </OverlayHeader>
 
     <div class="page">
       <ImageFrame
@@ -103,36 +102,6 @@ function onTouchEnd(event: TouchEvent) {
   padding: 16px;
   color: #f5efe0;
   background: rgba(20, 16, 10, 0.92);
-}
-
-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-header h2 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font-family: "LXGW WenKai TC", "Noto Serif TC", serif;
-  font-size: 1.1rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-header button {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  color: inherit;
-  font-size: 1.15rem;
-  background: none;
-  border: none;
-  opacity: 0.55;
 }
 
 .page {
@@ -231,7 +200,7 @@ footer button:disabled {
 }
 
 @media (max-width: 480px) {
-  header {
+  :deep(.overlay-header) {
     gap: 8px;
   }
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BookViewer from '../src/ui/BookViewer.vue'
+import ShelfPanel from '../src/ui/ShelfPanel.vue'
 import type { Showcase } from '../src/content/schema'
 
 const showcase: Showcase = {
@@ -14,6 +15,22 @@ const showcase: Showcase = {
 }
 
 describe('BookViewer', () => {
+  it('與本月選書使用相同的面板標題樣式', () => {
+    const viewer = mount(BookViewer, { props: { showcase } })
+    const shelf = mount(ShelfPanel, {
+      props: {
+        shelf: {
+          id: 'shelf-1',
+          title: '本月選書',
+          books: [],
+        },
+      },
+    })
+
+    expect(viewer.get('header h2').classes()).toContain('overlay-title')
+    expect(shelf.get('header h2').classes()).toContain('overlay-title')
+  })
+
   it('顯示標題與第一頁', () => {
     const w = mount(BookViewer, { props: { showcase } })
     expect(w.text()).toContain('手工蠟燭')

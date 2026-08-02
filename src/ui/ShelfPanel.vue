@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Shelf } from '../content/schema'
 import ImageFrame from './ImageFrame.vue'
+import OverlayHeader from './OverlayHeader.vue'
 
 defineProps<{ shelf: Shelf }>()
 const emit = defineEmits<{ close: [] }>()
@@ -8,10 +9,7 @@ const emit = defineEmits<{ close: [] }>()
 
 <template>
   <div class="overlay" data-testid="shelf-panel">
-    <header>
-      <h2>{{ shelf.title }}</h2>
-      <button data-testid="close" aria-label="關閉" @click="emit('close')">✕</button>
-    </header>
+    <OverlayHeader :title="shelf.title" @close="emit('close')" />
     <ul>
       <li v-for="(book, index) in shelf.books" :key="book.title">
         <ImageFrame
@@ -37,8 +35,6 @@ const emit = defineEmits<{ close: [] }>()
   position: fixed; inset: 0; z-index: 100; overflow-y: auto;
   background: rgba(20, 16, 10, 0.92); color: #f5efe0; padding: 16px;
 }
-header { display: flex; justify-content: space-between; align-items: center; }
-header button { background: none; border: none; color: inherit; font-size: 1.5rem; padding: 8px; }
 ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 16px; }
 li { display: flex; gap: 12px; }
 li .book-cover { width: 80px; height: 112px; border-radius: 4px; flex-shrink: 0; }

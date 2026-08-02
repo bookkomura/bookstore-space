@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import OverlayCloseButton from './OverlayCloseButton.vue'
 
 const emit = defineEmits<{ close: [] }>()
 const poemUploadUrl = 'https://paiwh-poem-display.hf.space/'
@@ -12,7 +13,7 @@ function handleFrameLoad() {
 
 <template>
   <section class="overlay" data-testid="poem-upload-overlay" style="position: fixed">
-    <button data-testid="close" aria-label="關閉拾字成詩" @click="emit('close')">✕</button>
+    <OverlayCloseButton class="poem-upload-close" aria-label="關閉拾字成詩" tone="dark" @close="emit('close')" />
     <Transition name="ink-loading">
       <div v-if="isFrameLoading" class="loading" data-testid="poem-upload-loading" aria-live="polite">
         <div class="ink-bloom" aria-hidden="true" />
@@ -33,6 +34,7 @@ function handleFrameLoad() {
   inset: 0;
   z-index: 100;
   isolation: isolate;
+  color: #f5efe0;
 }
 
 iframe {
@@ -43,9 +45,9 @@ iframe {
   border: 0;
 }
 
-button {
+:deep(.poem-upload-close) {
   position: absolute;
-  top: 1rem;
+  top: 0.25rem;
   right: 1rem;
   z-index: 2;
 }
