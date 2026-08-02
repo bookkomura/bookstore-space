@@ -198,6 +198,32 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="book-viewer"]').exists()).toBe(false)
   })
 
+  it('shows the boot loading overlay, tracks progress, and hides on boot:complete', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const wrapper = await mountApp()
+
+    expect(wrapper.find('[data-testid="boot-loading"]').exists()).toBe(true)
+    bridge.emit('boot:progress', 0.5)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="boot-loading-bar"]').attributes('aria-valuenow')).toBe('50')
+
+    bridge.emit('boot:complete')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="boot-loading"]').exists()).toBe(false)
+  })
+
+  it('keeps the boot overlay mounted and shows the zh-TW error copy on boot:error', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const wrapper = await mountApp()
+
+    bridge.emit('boot:error')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="boot-loading"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="boot-loading-copy"]').text()).toBe('場景素材載入失敗，請重新整理再試一次。')
+  })
+
   it('只把已設定 Showcase 的互動區傳給 Phaser', async () => {
     mocks.loadContent.mockResolvedValue({ ...content, showcases: [] })
     await mountApp()

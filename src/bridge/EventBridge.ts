@@ -7,6 +7,9 @@ export interface BridgeEvents {
   'zone:exit': { id: string }
   'ui:opened': undefined
   'ui:closed': undefined
+  'boot:progress': number
+  'boot:complete': undefined
+  'boot:error': undefined
 }
 
 type Handler<T> = (payload: T) => void

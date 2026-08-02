@@ -199,6 +199,8 @@ updated: 2026-07-19T00:04:00+08:00
 - 2026-07-19 00:03: Terra implementer 與 Terra reviewer 的盲點具相關性；task gates 只算局部證據，最終 fable 與 Cato cross-model audit 承擔 whole-branch 反相關檢查。
 - 2026-07-19 00:04: Controller context-hygiene gate 觸發於 Task 3 派工前；本 session 不開始 Task 3，先以 HANDOFF、ledger、ISA 與 git 建立安全恢復點。
 - 2026-07-19 00:04: 跨 session 記憶以 repo artifacts 與 git 為準；新 gpt-5.6-sol controller 必須從第一個未完成 Task 恢復，不依賴壓縮後聊天上下文。
+- 2026-08-02 23:44: 本 session 開始前先核對此 ISA 與 `git log` 現況——實際 main 分支已遠遠超出 Task 3–12 pipeline（heart sutra reveal、showcase 排序、creator 連結、image loader 等多項功能皆已 ship），無 `feature-phase1` worktree、無 Terra/Sol controller 在跑。此 ISA 的 Task 3–12 serial pipeline 判定為 stale/orphaned，非目前開發模式的真實反映；本次不重跑或回填該 50-ISC 結構，僅新增本次獨立 UI 功能的區塊。
+- 2026-08-02 23:44: 本次任務（載入畫面 wordmark）依 `design_handoff_loading_screen/README.md` 為 high-fidelity、「nothing invented」的規格交付，設計決策已在 handoff 定案；直接執行實作與驗證，不派發 IterativeDepth/RedTeam/Council 等重量分析型 capability——那些工具的邊際價值在此任務為零，show-your-math 見下方 LEARN。
 
 ## Changelog
 
@@ -206,6 +208,25 @@ updated: 2026-07-19T00:04:00+08:00
   refuted by: 對話記憶無法保證在 compaction 後仍保留每一個 Task 的 review 與 commit 邊界
   learned: ledger、task brief、report、review package 與 git commits 必須共同構成可恢復狀態
   criterion now: ISC-50 之外，每個 Task 僅在 review clean 並寫入 ledger 後才視為完成
+
+- 2026-08-02 | conjectured: 此 project ISA 的 Task 3–12 pipeline 仍是 bookstore-space 目前的權威開發狀態
+  refuted by: git log 顯示 main 已合併多個與該 pipeline 無關、更晚的功能分支，pipeline 描述的 controller/Terra/Sol 派工模式未在本 repo 實際使用
+  learned: 長壽 project ISA 若沒有持續在每個 session 回寫，會與有機演進的 repo 快速失準；下次任務應先跑一次 `Skill("ISA", "check completeness")` 或等效 git 對照，再決定要延續舊 ISC 表還是另開區塊
+  criterion now: 新功能（如本次載入畫面）在 ISA 內另立小節記錄，不強行套入已失準的 Task 3–12 骨架
+
+## Loading Screen Wordmark (2026-08-02)
+
+依 `~/Downloads/design_handoff_loading_screen/README.md`（設計已定案，2a/1b）：
+
+- [x] LS-1: `EventBridge.ts` 的 `BridgeEvents` 新增 `boot:progress`(number)、`boot:complete`(undefined)、`boot:error`(undefined)。
+- [x] LS-2: `BootScene.ts` 移除 Phaser 矩形進度條，`preload()` 改為 emit `boot:progress`；`create()` 依 `assetFailed` emit `boot:complete` 或 `boot:error`。
+- [x] LS-3: 新增 `src/ui/BootLoading.vue`——ink bloom、小村閱讀逐字 stagger（0/180/360/540ms）、204×16 進度條（fill `calc(200px * var(--progress))`）、狀態列（`正在整理書架⋯⋯` / 錯誤文案）、`prefers-reduced-motion` 停用動畫。
+- [x] LS-4: `App.vue` 新增 `bootProgress`/`bootReady`/`bootError` refs，掛載即訂閱 boot 事件（在 `loadContent()` 之前），`<Transition name="boot-loading">` 包裹 `BootLoading`，fade-out 180ms 對齊 `PoemUploadOverlay` 的 `ink-loading` 模式。
+- [x] LS-5: Anti: 不修改既有 `interact`/`zone:*`/`ui:*` bridge 行為與既有 overlay 元件。
+- [x] LS-6: `npx vue-tsc --noEmit` 除既有與本次無關的 `StoreScene.test.ts` 兩筆錯誤外無新增錯誤（stash 對照確認為既存）。
+- [x] LS-7: `npx vitest run` 全數 132/132 通過（含新增 `BootLoading.test.ts` 3 筆、`App.test.ts` 新增 2 筆）。
+- [x] LS-8: 真實瀏覽器（`http://localhost:5173`，既有 dev server）載入後場景正常啟動、無 console error，證實 boot 事件鏈路端到端運作。
+- [DEFERRED-VERIFY] LS-9: 載入中動畫畫面的即時截圖——本機資產已被瀏覽器快取，`load complete` 在可觀測的螢幕截圖往返時間內即完成，無法用目前工具組截到轉場中畫面；已用元件層 unit test（LS-7 涵蓋 wordmark 文字、aria-valuenow、進度寬度、錯誤文案）取代。Follow-up：下次若需視覺回歸，用 `Skill("Interceptor")` 搭配 network throttling 或暫時 mock `load.once('complete')` 延遲重試。
 
 ## Verification
 

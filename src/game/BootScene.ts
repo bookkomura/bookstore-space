@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { bridge } from '../bridge/EventBridge'
 import { PLAYER_APPEARANCES, PLAYER_FRAME_SIZE } from './playerAppearance'
 
 const backgroundUrl = new URL('../assets/store-background.png', import.meta.url).href
@@ -11,21 +12,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    const { width, height } = this.scale
-    const barBg = this.add.rectangle(width / 2, height / 2, 204, 16, 0x444444)
-    const bar = this.add
-      .rectangle(width / 2 - 100, height / 2, 0, 12, 0xd8c9a3)
-      .setOrigin(0, 0.5)
-
     this.load.on('progress', (value: number) => {
-      bar.width = 200 * value
+      bridge.emit('boot:progress', value)
     })
     this.load.once('loaderror', () => {
       this.assetFailed = true
-    })
-    this.load.once('complete', () => {
-      bar.destroy()
-      barBg.destroy()
     })
 
     this.load.image('store-background', backgroundUrl)
@@ -39,17 +30,11 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     if (this.assetFailed) {
-      this.add
-        .text(
-          this.scale.width / 2,
-          this.scale.height / 2,
-          '場景素材載入失敗，請重新整理再試一次。',
-          { color: '#f5efe0', fontSize: '18px', align: 'center' },
-        )
-        .setOrigin(0.5)
+      bridge.emit('boot:error')
       return
     }
 
+    bridge.emit('boot:complete')
     this.scene.start('store')
   }
 }

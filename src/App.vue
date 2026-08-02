@@ -7,6 +7,7 @@ import { createGame } from './game/createGame'
 import { buildInteractionLabels } from './game/interactionLabels'
 import { buildInteractionZones } from './game/sceneLayout'
 import BookViewer from './ui/BookViewer.vue'
+import BootLoading from './ui/BootLoading.vue'
 import NewsletterArchive from './ui/NewsletterArchive.vue'
 import PoemUploadOverlay from './ui/PoemUploadOverlay.vue'
 import ShelfPanel from './ui/ShelfPanel.vue'
@@ -22,6 +23,9 @@ const showInfo = ref(false)
 const showArchive = ref(false)
 const showPoemUpload = ref(false)
 const currentZone = ref<BridgeEvents['zone:enter'] | null>(null)
+const bootProgress = ref(0)
+const bootReady = ref(false)
+const bootError = ref(false)
 const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const uiOpen = computed(
   () => Boolean(activeShowcase.value || activeShelf.value || showInfo.value || showArchive.value || showPoemUpload.value),
@@ -57,6 +61,18 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 onMounted(async () => {
+  bridgeUnsubscribers.push(
+    bridge.on('boot:progress', (value) => {
+      bootProgress.value = value
+    }),
+    bridge.on('boot:complete', () => {
+      bootReady.value = true
+    }),
+    bridge.on('boot:error', () => {
+      bootError.value = true
+    }),
+  )
+
   try {
     content.value = await loadContent()
   } catch (e){
@@ -67,7 +83,7 @@ onMounted(async () => {
 
   if (isUnmounted || !container.value) return
   window.addEventListener('keydown', handleKeydown)
-  bridgeUnsubscribers = [
+  bridgeUnsubscribers.push(
     bridge.on('interact', openInteraction),
     bridge.on('zone:enter', (zone) => {
       currentZone.value = zone
@@ -75,7 +91,7 @@ onMounted(async () => {
     bridge.on('zone:exit', ({ id }) => {
       if (currentZone.value?.id === id) currentZone.value = null
     }),
-  ]
+  )
   game = createGame(
     container.value,
     buildInteractionLabels(content.value),
@@ -110,6 +126,9 @@ function closeAll() {
     <p>內容載入失敗，請重新整理再試一次。</p>
   </div>
   <template v-else>
+    <Transition name="boot-loading">
+      <BootLoading v-if="!bootReady || bootError" :progress="bootProgress" :error="bootError" />
+    </Transition>
     <div ref="container" class="game" />
     <TouchControls
       v-if="isTouch"
@@ -132,4 +151,11 @@ function closeAll() {
 <style>
 .game { width: 100vw; height: 100vh; }
 .error { color: #f5efe0; display: flex; height: 100vh; align-items: center; justify-content: center; }
+
+.boot-loading-leave-active { transition: opacity 180ms ease-out; }
+.boot-loading-leave-to { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-loading-leave-active { transition: none; }
+}
 </style>
