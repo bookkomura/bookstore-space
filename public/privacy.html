@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="小村閱讀 Bookstore Space Newsletter Sync 隱私權政策" />
+  <title>隱私權政策｜小村閱讀</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Noto Serif TC", "PingFang TC", "Microsoft JhengHei", serif;
+      color: #352c24;
+      background: #f4efe5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; line-height: 1.8; }
+    main {
+      width: min(760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+    article {
+      padding: clamp(24px, 5vw, 48px);
+      border: 1px solid rgba(85, 67, 48, 0.16);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: 0 18px 50px rgba(61, 47, 34, 0.08);
+    }
+    h1, h2 { line-height: 1.4; color: #2c241d; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.8rem, 5vw, 2.5rem); }
+    h2 { margin: 2rem 0 0.5rem; font-size: 1.2rem; }
+    p, ul { margin: 0.65rem 0; }
+    ul { padding-left: 1.4rem; }
+    a { color: #735331; }
+    a:hover, a:focus-visible { color: #3d2a18; }
+    .eyebrow { margin: 0 0 6px; color: #816d59; font-size: 0.9rem; letter-spacing: 0.08em; }
+    .updated { color: #77695d; font-size: 0.9rem; }
+    .back { display: inline-block; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <article>
+      <p class="eyebrow">小村閱讀</p>
+      <h1>隱私權政策</h1>
+      <p class="updated">最後更新日期：2026 年 8 月 26 日</p>
+
+      <p>
+        本政策說明小村閱讀的 <strong>Bookstore Space Newsletter Sync</strong>
+        如何透過 Google Gmail API 存取、使用、保存及分享 Google 使用者資料。
+      </p>
+
+      <h2>服務目的</h2>
+      <p>
+        本服務用於把指定寄件者寄至管理信箱、主旨含有「小村碎碎念」的電子報，
+        自動整理並發布至小村閱讀網站的公開電子報檔案室。
+      </p>
+
+      <h2>存取的 Google 使用者資料</h2>
+      <p>
+        本服務使用 Gmail 唯讀權限 <code>gmail.readonly</code>，監聽收件匣更新，
+        並讀取郵件的寄件者、主旨、標籤、寄送時間、內文、連結及內嵌圖片。
+        只有符合指定寄件者、指定主旨及收件匣條件的郵件會進一步處理。
+      </p>
+      <p>本服務不會寄送、刪除、移動或修改 Gmail 郵件。</p>
+
+      <h2>資料用途</h2>
+      <p>
+        符合條件的電子報資料只用於辨識重複郵件、解析電子報內容、發布公開檔案，
+        以及觸發網站內容重新部署。本服務不使用 Google 使用者資料進行廣告、行銷分析、
+        信用評估或建立使用者輪廓。
+      </p>
+
+      <h2>資料保存與刪除</h2>
+      <ul>
+        <li>Google OAuth 憑證以受限制的雲端密鑰服務保存。</li>
+        <li>郵件識別碼、處理狀態與錯誤紀錄保存在 Google Cloud，供同步、除錯及防止重複發布使用。</li>
+        <li>電子報的主旨、寄送日期、內文、連結及圖片保存在 Storyblok，並透過小村閱讀網站公開呈現。</li>
+      </ul>
+      <p>
+        資料只在提供及維護電子報檔案功能所需期間保存。如需停止 Gmail 存取、
+        撤銷授權或要求刪除相關資料，請使用下方聯絡方式提出申請。
+      </p>
+
+      <h2>資料分享</h2>
+      <p>
+        資料只會提供給執行本服務所需的處理平台，包括 Google Cloud、Storyblok 與
+        Cloudflare Pages。本服務不出售 Google 使用者資料，也不會把資料提供給第三方用於廣告。
+        除提供本功能、維護安全或依法配合外，不會將資料移轉給其他第三方。
+      </p>
+
+      <h2>Google API Limited Use</h2>
+      <p>
+        本服務使用從 Google Workspace API 取得的資訊時，會遵守
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>，
+        包括其中的 Limited Use requirements。
+      </p>
+
+      <h2>資料安全</h2>
+      <p>
+        我們使用存取權限控管、受管理的雲端密鑰與加密連線保護資料，並將 Gmail 權限限制為服務運作所需的唯讀範圍。
+      </p>
+
+      <h2>政策更新</h2>
+      <p>若資料處理方式改變，本頁會同步更新內容及最後更新日期。</p>
+
+      <h2>聯絡方式</h2>
+      <p>
+        如對本政策、Gmail 資料使用、授權撤銷或資料刪除有任何疑問，請聯絡
+        <a href="mailto:bookkomura@gmail.com">bookkomura@gmail.com</a>。
+      </p>
+
+      <a class="back" href="/">返回小村閱讀</a>
+    </article>
+  </main>
+</body>
+</html>

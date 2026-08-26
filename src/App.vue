@@ -145,6 +145,15 @@ function closeAll() {
       @close="closeAll"
     />
     <PoemUploadOverlay v-if="showPoemUpload" @close="closeAll" />
+    <a
+      class="privacy-policy-link"
+      data-testid="privacy-policy-link"
+      href="/privacy.html"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      隱私權政策
+    </a>
   </template>
 </template>
 
@@ -154,6 +163,28 @@ function closeAll() {
 
 .boot-loading-leave-active { transition: opacity 180ms ease-out; }
 .boot-loading-leave-to { opacity: 0; }
+
+.privacy-policy-link {
+  position: fixed;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 40;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(30, 25, 20, 0.72);
+  color: rgba(255, 247, 222, 0.9);
+  font-size: 12px;
+  line-height: 1.4;
+  text-decoration: none;
+  backdrop-filter: blur(4px);
+}
+
+.privacy-policy-link:hover,
+.privacy-policy-link:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .boot-loading-leave-active { transition: none; }

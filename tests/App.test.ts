@@ -171,6 +171,13 @@ describe('App', () => {
     expect(mocks.createGame).not.toHaveBeenCalled()
   })
 
+  it('links to the public privacy policy from the homepage', async () => {
+    mocks.loadContent.mockResolvedValue(content)
+    const wrapper = await mountApp()
+
+    expect(wrapper.get('[data-testid="privacy-policy-link"]').attributes('href')).toBe('/privacy.html')
+  })
+
   it('removes its bridge listener and destroys the game when unmounted', async () => {
     mocks.loadContent.mockResolvedValue(content)
     const opened = vi.fn()
