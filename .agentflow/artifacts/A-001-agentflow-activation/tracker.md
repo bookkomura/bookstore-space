@@ -8,15 +8,15 @@
 
 - **Goal:** Initialize the project-local Agentflow notebook and settings requested by the owner.
 
-- **Last update:** 2026-09-11 22:10:00 Asia/Taipei.
+- **Last update:** 2026-09-11 22:12:00 Asia/Taipei.
 
 - **Evidence commit:** uncommitted.
 
 ## Overall state
 
-- **State:** active.
+- **State:** blocked.
 
-- **Reason:** Initialization records require independent verification and closeout.
+- **Reason:** The required independent review needs explicit owner authorization to send a no-remote clone to the configured model provider.
 
 - **Total:** 1.
 
@@ -38,9 +38,9 @@
 
 - **Last proven result:** `agf init` completed and intake validated `ag.json`.
 
-- **Active blocker or running process:** None.
+- **Active blocker or running process:** External-provider authorization is required; no worker is running.
 
-- **Next safe action:** obtain the required independent configuration review.
+- **Next safe action:** obtain owner authorization, then relaunch the frozen requirements review.
 
 - **Expected changed files:** .agentflow/devlog.md, .agentflow/artifacts/A-001-agentflow-activation/tracker.md, .gitignore, ag.json.
 
@@ -48,15 +48,15 @@
 
 - **All accepted tasks checked:** no.
 
-- **Blocking accepted decision:** none.
+- **Blocking accepted decision:** authorize or decline the external no-remote-clone review.
 
 - **Operation running:** no.
 
-- **Next action remaining:** T-1.
+- **Next action remaining:** owner authorization for T-1.
 
 - **Evidence status:** current.
 
-- **Judgment:** active.
+- **Judgment:** blocked.
 
 ## Update meaning
 
