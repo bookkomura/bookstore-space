@@ -8,13 +8,13 @@ Current commit: 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b — final implementatio
 
 Tests/scenarios: 84 tests, TypeScript build, amd64 smoke and independent reviews PASS; 24 CMS restorations verified.
 
-Configuration: .agentflow/features/newsletter-diagnosis/ag.json — schema v7; validated for codex.
+Configuration: .agentflow/features/newsletter-diagnosis/ag.json — schema v7; validated for codex this round.
 
 Proven: parser deployed at 100% traffic; all 24 published newsletters restored with assets/metadata and manual deletion retained; website rebuild accepted.
 
 Open: formal site URL needed for public check; direct healthz upstream404; canonical Reply blocked by checkpoint linter and strict STATUS dotted-path defects; branch integration deferred.
 
-Next: provide formal URL for read-only page check; protocol repair only if separately requested. Complete report saved as reply-draft.md.
+Next: deliver the owner-confirmed repair to develop by fast-forward; retain existing implementation evidence and the report saved as reply-draft.md.
 
 Artifacts: .agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/tracker.md; reply-draft.md; closeout-preflight.json; cross-check-final-report.md; cross-check-resume-report.md; deployment-result.json; recovery-result.json; website-deployment.json.
 
@@ -109,6 +109,11 @@ The report is available for your inspection. The reviewer corroborates the diagn
 + 所以接下來要做什麼
 
 + 好 開始修正
+
++ [Agentflow](/Users/pai/.agents/skills/agentflow/SKILL.md) 結案驗證仍有衝突
+那我要怎麼修正
+
++ 確認已修復，可以合回 develop 了
 
 ## [RUN-001] Event — 2026-10-04 15:40:33 (during round A-002)
 
@@ -223,3 +228,11 @@ The report is available for your inspection. The reviewer corroborates the diagn
 - Product objective complete: tested/reviewed parser deployed, 24 published stories structurally read-back verified, Cloudflare rebuild accepted. Complete owner report preserved at .agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/reply-draft.md after standard-input Reply append failed and the permitted file-input fallback also failed.
 - Protocol stop: no further implementation tests/reviews or repeated closeout validation. Reply writer's candidate checker rejects historical checkpoint footer spans after intervening RUN events, despite append-wip accepting those checkpoints and append-run accepting the intervening events. Strict STATUS separately rejects the legitimate dotted config path. These are bookkeeping limits, not a product failure. No checker bypass or skill-source modification.
 - Complete tracker validates; exact implementation 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b is already pushed. Remaining action is commit/push owned records and report the actual workflow/public-URL limits.
+
+## [RUN-012] Event — 2026-10-04 17:58:48 (during round A-002)
+
+- Owner acceptance: 確認已修復，可以合回 develop 了 authorizes delivery of the already verified repair to develop. The owner message and preceding Agentflow question are now copied verbatim into this Ask.
+- Delivery target: develop, as explicitly requested. After origin fetch, local develop is 0a70bd57532fe293ef586edaee6a3109f2568920 and is an ancestor of the clean, pushed newsletter-diagnosis branch; origin/develop does not yet exist. Agentflow finish only targets the detected default main, so the owner-selected target is delivered with an ordinary fast-forward and non-force push.
+- Existing evidence retained: exact implementation 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b already passed the 84-test service suite, TypeScript build, container smoke and independent reviews. Only delivery records change; source tests and substantive review are not repeated.
+- **Scope check:** delivery includes the newsletter MIME source/test and this stream records. The three dirty root Agentflow files are outside that diff; their pre-delivery byte hashes were recorded in host evidence and will be checked after delivery. No other worktree or branch will be removed or merged.
+- Protocol limit retained: canonical Reply remains blocked by the previously reproduced checkpoint and dotted-path checks. The complete report is saved as reply-draft.md; product acceptance and explicit develop delivery are recorded without claiming that the Agentflow checker is repaired.
