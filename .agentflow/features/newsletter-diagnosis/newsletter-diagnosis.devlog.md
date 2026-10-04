@@ -10,11 +10,11 @@ Tests/scenarios: 84 tests, TypeScript build, amd64 smoke and independent reviews
 
 Configuration: .agentflow/features/newsletter-diagnosis/ag.json — schema v7; validated for codex this round.
 
-Proven: parser deployed at 100% traffic; all 24 published newsletters restored with assets/metadata and manual deletion retained; website rebuild accepted.
+Proven: parser deployed at 100% traffic; all 24 published newsletters restored with assets/metadata and manual deletion retained; website rebuild accepted; owner confirmed the repair; develop fast-forward and origin/develop push succeeded at 37966fb79f54eb82196f3e079252bb08fde39a90.
 
-Open: formal site URL needed for public check; direct healthz upstream404; canonical Reply blocked by checkpoint linter and strict STATUS dotted-path defects; branch integration deferred.
+Open: direct healthz upstream404 remains unproven; canonical Reply remains blocked by checkpoint linter and strict STATUS dotted-path defects. Owner acceptance and develop delivery are complete.
 
-Next: deliver the owner-confirmed repair to develop by fast-forward; retain existing implementation evidence and the report saved as reply-draft.md.
+Next: no remaining develop delivery; Agentflow protocol repair is separate work if requested. The complete implementation report remains saved as reply-draft.md.
 
 Artifacts: .agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/tracker.md; reply-draft.md; closeout-preflight.json; cross-check-final-report.md; cross-check-resume-report.md; deployment-result.json; recovery-result.json; website-deployment.json.
 
@@ -26,7 +26,7 @@ Streams: none.
 
 Backlink: main notebook `.agentflow/devlog.md` (main checkout).
 
-Feature: newsletter-diagnosis — active — Newsletter parsing diagnosis
+Feature: newsletter-diagnosis — closed
 
 ---
 
@@ -236,3 +236,9 @@ The report is available for your inspection. The reviewer corroborates the diagn
 - Existing evidence retained: exact implementation 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b already passed the 84-test service suite, TypeScript build, container smoke and independent reviews. Only delivery records change; source tests and substantive review are not repeated.
 - **Scope check:** delivery includes the newsletter MIME source/test and this stream records. The three dirty root Agentflow files are outside that diff; their pre-delivery byte hashes were recorded in host evidence and will be checked after delivery. No other worktree or branch will be removed or merged.
 - Protocol limit retained: canonical Reply remains blocked by the previously reproduced checkpoint and dotted-path checks. The complete report is saved as reply-draft.md; product acceptance and explicit develop delivery are recorded without claiming that the Agentflow checker is repaired.
+
+## [RUN-013] Event — 2026-10-04 18:01:36 (during round A-002)
+
+- develop delivery succeeded: git merge --ff-only advanced the main checkout from 0a70bd57532fe293ef586edaee6a3109f2568920 to 37966fb79f54eb82196f3e079252bb08fde39a90. git push --atomic origin newsletter-diagnosis develop exited 0, updated the stream branch and created origin/develop at that exact commit.
+- Stream marked closed after owner acceptance and completed product delivery. Canonical Agentflow Reply validation is still a separately recorded protocol limit, not reported as PASS.
+- Remaining work is delivery-record synchronization and direct comparison of local/remote tips and preserved dirty-root file hashes. This changes no source or substantive review evidence and does not repeat the passed implementation checks.
