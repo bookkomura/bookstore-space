@@ -1,0 +1,10 @@
+{
+  "changed_files": [
+    ".agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/recover-content.mjs"
+  ],
+  "changed_lines": 13,
+  "behavior_change": true,
+  "trust_boundary": false,
+  "broad_change": false,
+  "consequential_change": false
+}

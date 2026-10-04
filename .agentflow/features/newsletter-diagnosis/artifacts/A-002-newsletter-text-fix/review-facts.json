@@ -1,0 +1,11 @@
+{
+  "changed_files": [
+    "services/newsletter-sync/src/mime.ts",
+    "services/newsletter-sync/test/mime.test.ts"
+  ],
+  "changed_lines": 208,
+  "behavior_change": true,
+  "trust_boundary": false,
+  "broad_change": false,
+  "consequential_change": false
+}

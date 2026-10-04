@@ -1,0 +1,12 @@
+{
+  "revision": "newsletter-sync-textfix-ed5d988",
+  "imageDigest": "sha256:29c20930e96ae46407d64900cd96cfa284af65dab4c82f3be038ed3f5bba4081",
+  "ready": true,
+  "containerHealthy": true,
+  "trafficPercent": 100,
+  "port8080ListeningConfirmed": true,
+  "containerSmoke": "PASS",
+  "compiledMimeSha256": "15156ce034a1d75a123df779bd152aec6ded0f385a2d783223bb5e09d46f21b6",
+  "directHealthz": "upstream Google HTML 404; no app request log; direct endpoint success unproven",
+  "rollbackRevision": "newsletter-sync-storyblok2"
+}

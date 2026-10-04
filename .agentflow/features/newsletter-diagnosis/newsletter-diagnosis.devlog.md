@@ -4,19 +4,19 @@ Project: bookstore-space
 
 Notebook: .agentflow/features/newsletter-diagnosis/newsletter-diagnosis.devlog.md — stream.
 
-Current commit: b745a579c61401cb220ec08024de7771b2cee98d — reviewed activation; later commits contain records only.
+Current commit: 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b — final implementation; later commits contain records only.
 
-Tests/scenarios: seven MIME tests passed; earlier synthetic cases reproduced formatted-text and anchor loss.
+Tests/scenarios: 84 tests, TypeScript build, amd64 smoke and independent reviews PASS; 24 CMS restorations verified.
 
-Configuration: .agentflow/features/newsletter-diagnosis/ag.json — schema v7; validated for codex this round.
+Configuration: .agentflow/features/newsletter-diagnosis/ag.json — schema v7; validated for codex.
 
-Proven: external review and Host gate PASS; missing text is reproduced before Storyblok publication.
+Proven: parser deployed at 100% traffic; all 24 published newsletters restored with assets/metadata and manual deletion retained; website rebuild accepted.
 
-Open: Agentflow STATUS validator rejects the valid .agentflow configuration path; product defect remains unrepaired; live MIME not inspected; root integration deferred.
+Open: formal site URL needed for public check; direct healthz upstream404; canonical Reply blocked by checkpoint linter and strict STATUS dotted-path defects; branch integration deferred.
 
-Next: resolve the Agentflow path-validation defect before claiming full workflow closeout; await the next owner request.
+Next: provide formal URL for read-only page check; protocol repair only if separately requested. Complete report saved as reply-draft.md.
 
-Artifacts: .agentflow/features/newsletter-diagnosis/artifacts/A-001-newsletter-diagnosis/cross-check-brief.md; cross-check-report.md; review-run.json.
+Artifacts: .agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/tracker.md; reply-draft.md; closeout-preflight.json; cross-check-final-report.md; cross-check-resume-report.md; deployment-result.json; recovery-result.json; website-deployment.json.
 
 Archived eras: none.
 
@@ -106,4 +106,120 @@ The report is available for your inspection. The reviewer corroborates the diagn
 
 # → Ask / A-002
 
-+
++ 所以接下來要做什麼
+
++ 好 開始修正
+
+## [RUN-001] Event — 2026-10-04 15:40:33 (during round A-002)
+
+- Scope: exact owner message 好 開始修正 authorizes the previously described parser repair, tests, deployment, and affected-story recovery. Added it and the preceding next-step question verbatim to the current Ask.
+- Local route: direct; the skill's main direct-work rule assigns the host a clear, reversible two-file patch with no new schema, public API, dependency, or safety policy. Existing HTTPS clickable-link restriction remains intact; unsafe anchor labels may remain plain visible text inside paragraphs. Live deployment/content recovery are later steps after verified code and concrete operational evidence.
+- Smallest design: collect inline descendants in each text block while excluding descendant block containers and image/divider nodes; retain safe links as existing separate link blocks. Rejected simply using div.text() because nested paragraphs would be duplicated and container text could move ahead of images.
+- No added stored-data concept or field is required. Preserve existing CID caption behavior and the source order. Existing standalone non-HTTPS link handling stays unchanged unless the owner-required inline-text case needs plain text preservation.
+- Configuration: existing stream, allow-ag on, auto-reply on. No external-provider approval needs repeating; the configured read-only cross-check remains explicitly authorized. A meaningful tracker records local verification, deployment, and data recovery separately.
+
+## [RUN-002] Event — 2026-10-04 15:49:43 (during round A-002)
+
+- RED: original parser failed nine added regression cases while seven existing MIME tests passed. One linked-image omission in the first fix also failed its added test and was corrected.
+- GREEN: complete newsletter-sync suite PASS, 7 files / 83 tests; TypeScript build PASS. Sandboxed HTTP tests initially failed on EPERM listener binding; the identical full suite passed with permitted local listener execution.
+- Fix commit: 931d220fac076ad066e1ee0be3fc3bf66affe224. Only mime.ts and mime.test.ts change application behavior; block schema, dependencies and front-end are unchanged. Traversal preserves inline descendants, source order, safe action links and caption subtrees.
+- Read-only deployment check verified existing project bookstore-space-5sdr / asia-east1 / newsletter-sync; revision newsletter-sync-storyblok2 receives all traffic. No live mutation yet.
+- Next: targeted exact-commit review, followed by deployment evidence and bounded original-message recovery.
+
+## [RUN-003] Event — 2026-10-04 15:54:53 (during round A-002)
+
+- Independent targeted review PASS for implementation 931d220fac076ad066e1ee0be3fc3bf66affe224. Reviewer directly reran 18 MIME tests; Outcome, Minimality and Conformance each PASS.
+- Host gate: PASS. Read report, verified exact commit, SHA-256 76953c79ae80bd1dbde6a570e1959acd7001d91cd7a893cad70fe6c3686a1490, frozen brief/notebook bytes, and clone changes limited to the declared report beyond overlaid inputs. Imported only report.
+- T-1 complete; report ready for owner inspection. Next: build reviewed source as immutable linux/amd64 image. Docker Desktop was installed but stopped, so started it; now daemon responds linux/aarch64. Cloud Build is not enabled; no API or infrastructure change made.
+- Read-only original-message/Storyblok dry run remains running; no live content update yet.
+
+## [RUN-004] Event — 2026-10-04 15:56:54 (during round A-002)
+
+- New operational evidence: read-only comparison inspected all 24 published claims. Some source layout containers include a further CID image; consuming their entire subtree as a caption omitted that image. Reopened the caption design before any live write; stopped the initial Docker build.
+- A synthetic regression failed with the same consumed-image behavior. Smallest correction rejects caption candidates containing img or hr; ordinary formatted caption subtrees are still consumed without duplicates. Rejected blindly skipping descendants, which would lose real images and dividers. No new stored concept.
+- Current corrected source passes full service suite 7 files / 84 tests and TypeScript build. Changed source requires a fresh exact-commit targeted review; the previous review remains valid only for its superseded commit.
+- Scope check: git changed paths remain the MIME source/test, stream notebook and A-002 artifact directory, matching tracker. T-1 reopened; T-2/T-3 pending. No deployment, CMS writes or private message identifier export.
+
+## [WIP-001] Checkpoint — 2026-10-04 15:56:54 (during round A-002)
+
+- Finished: reproduced and fixed formatted-text/inline-link loss; refreshed full suite passes 84 tests and TypeScript build. Inspected 24 already-published source messages and CMS entries read-only.
+- Running now: final review of an additional caption guard required by live layout evidence.
+- Still to do: review the exact corrected commit, deploy the image, and recover eligible unchanged parser-generated CMS content with backups.
+- Next work action: commit the caption guard and dispatch the targeted review; refresh the private recovery comparison.
+
+[x] tracker.md | [x] devlog RUN | [x] scope matches tracker
+
+## [RUN-005] Event — 2026-10-04 16:06:35 (during round A-002)
+
+- Concrete recovery evidence: 23 CMS block lists exactly match legacy parser output; the other equals its output with only the first unchanged three-character paragraph deleted (44 blocks retained, no added blocks). The bounded recovery script proves and preserves that deletion. All 24 private Message-ID exclusion, source identity, published/no-draft, CID count/order checks passed; no source identifiers or mail bodies enter durable artifacts.
+- Default dry-run produced 24 payloads, SHA-256 4c73ae2d26c0d39a4a7ac1b778ded9a0a45aa03d279daa8cc304839e94ad1202. Original and proposed full content stay in private mode0700/0600 temporary files, outside Git and reviewer clone. Script reads frozen payloads on apply and rechecks live content hashes/timestamps before updating. No API mutation yet.
+- Implementation now frozen at ef4a3bdf2cf6cdbea9e2aa57ba0659a6c064247e; full cross-check selected due publication boundary and sanitized evidence size. Configured independent reviewer is running against this exact commit.
+- Built linux/amd64 image ed5d988-text-fix; synthetic in-image smoke PASS for styled sentence, inline link sentence and both CID images. Compiled MIME SHA-256 15156ce034a1d75a123df779bd152aec6ded0f385a2d783223bb5e09d46f21b6 matches tested host build. Upload is running.
+- Scope check: changed paths remain expected MIME source/test and stream artifacts/notebook. Root unrelated record edits remain untouched. Deployment and CMS application wait for final review PASS.
+
+## [WIP-002] Checkpoint — 2026-10-04 16:06:35 (during round A-002)
+
+- Finished: tested parser fix, all 24 original-message comparisons, private backups, exact dry-run recovery payloads, and amd64 deployment image smoke check.
+- Running now: independent full review of final source/recovery script and image registry upload.
+- Still to do: deploy the reviewed image, apply and verify 24 content updates while preserving the known leading deletion, and rebuild the website.
+- Next work action: inspect the final review and registry digest, then execute the bounded deployment/recovery steps.
+
+[x] tracker.md | [x] devlog RUN | [x] scope matches tracker
+
+## [RUN-006] Event — 2026-10-04 16:12:11 (during round A-002)
+
+- Final independent full review PASS for ef4a3bdf2cf6cdbea9e2aa57ba0659a6c064247e. Reviewer reran complete 84-test suite and TypeScript build; offline mocked recovery proved all-story preflight, per-story recheck, unchanged assets/metadata, exact readback, edit rejection and preserved leading deletion.
+- Host gate: PASS. Verified exact reviewed commit, four single PASS verdicts, frozen brief, unchanged notebook historical prefix and clone diff limited to overlaid inputs plus the sole report. Report SHA-256 f2df3cb9de430716ea64ea214597a92fbf69c265a3afdd4977dc7076c236dd85. Reviewer wrote the report adjacent to the brief rather than clone root; imported the sole inspected report and recorded this mechanical location deviation without repeating substantive review.
+- T-1 complete. Source/recovery implementation pushed to origin/newsletter-diagnosis; fetched and inspected incoming history first (none). Image upload confirmed immutable digest sha256:29c20930e96ae46407d64900cd96cfa284af65dab4c82f3be038ed3f5bba4081. Existing-service image update is running.
+- Frozen 24-story recovery plan hash rechecked unchanged before application; no CMS mutation yet. Deployment and recovery are the already authorized A-002 steps, reversible via old revision and original content backups; no account, schema or infrastructure control changes.
+
+## [RUN-007] Event — 2026-10-04 16:19:33 (during round A-002)
+
+- T-2 deployment complete: newsletter-sync-textfix-ed5d988 is Ready/Active/ContainerHealthy, serving 100% traffic, with exact verified image digest. Direct authenticated /healthz requests returned upstream HTML 404, so endpoint-level health success is not claimed; Cloud Run readiness and actual-container parsing smoke remain directly proven. No security/IAM changes made.
+- Recovery first PUT completed and published story 218385300424804, then its JSON-string hash readback mismatch correctly stopped further writes. Read-only structural comparison proved published=true, contentDeepEqual=true, metadataEqual=true, zero field differences and original assets preserved. Failure was JSON key order only; no content loss.
+- Necessary script correction at 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b uses structural equality for restored content and exact identity, plus a verified already-restored skip on resume. Original draft/content-hash/timestamp guards and frozen payloads stay intact. Actual-script offline mocks PASS for shuffled key order, one restored plus one pending story with only one PUT, and timestamp change rejection before all writes.
+- Independent targeted review of only this newly changed verification/resume behavior is running; unchanged parser suite is not rerun. Original payload/backup are unchanged. T-3 remains active with one correct published update and 23 pending.
+- Scope check: current changes remain in expected stream notebook/artifact paths; application parser is unchanged since the full PASS review. Root unrelated edits remain untouched.
+
+## [WIP-003] Checkpoint — 2026-10-04 16:19:33 (during round A-002)
+
+- Finished: final parser tests/build/review, immutable image deployment at 100% traffic, private backups and all 24 restoration payloads; first CMS update is published and structurally verified.
+- Running now: targeted review of JSON key-order validation and verified-content resume handling.
+- Still to do: complete 23 pending CMS updates, verify all 24 restored entries and rebuild the website. Direct Cloud Run health endpoint success remains unproven despite platform readiness.
+- Next work action: accept the inspected review, resume the unchanged frozen recovery plan and read back the results.
+
+[x] tracker.md | [x] devlog RUN | [x] scope matches tracker
+
+## [RUN-008] Event — 2026-10-04 16:26:02 (during round A-002)
+
+- Targeted recovery review PASS for 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b. Host gate: PASS. Verified unchanged frozen input hashes, sole report, exact commit and four single PASS verdicts. Original worker report hash 42bc452d1e97549f093816b44132f2a66544ebf555b85599990661220e5ca263; removed only a stray trailing asterisk from the opening stamp to satisfy the mechanical report contract (imported hash 9ad2dee3049c77927d5e154c84be845feaa38860b5cf9ba232f477fecf67eb4a), without changing evidence/verdicts or repeating substantive review.
+- Same frozen recovery plan resumed successfully: first story structurally verified and skipped; remaining 23 updated and individually published/read-back verified. All 24 complete, including pictured story 202994893283449, with existing image assets, current metadata and verified leading deletion retained. Private backup and frozen planned content remain available. No duplicates/assets/Firestore changes.
+- New revision startup log confirms listening on port8080. Direct healthz HTML404 is from upstream Google, not Express, and no matching revision HTTP request appeared; direct endpoint-level success is still unclaimed. Platform readiness and image smoke are proven.
+- Website rebuild: first existing deploy-hook invocation did not yield verified success; one bounded retry is checking response status/codes without exposing the hook. CMS restoration is complete; public static content refresh remains to verify.
+
+## [RUN-009] Event — 2026-10-04 16:28:21 (during round A-002)
+
+- Existing Cloudflare deploy hook retry returned HTTP200, JSON success=true, no error codes, with result.id (no public deployment URL in its response). Website rebuild was accepted. Hook remained private and no configuration/secrets were changed.
+- T-3 restoration is complete: all 24 target stories independently published/read-back verified by the bounded script. Image assets and metadata retained, the one known leading deletion retained, and no duplicates created. Public website data freshness verification is a separate pending read-only check; asked owner for its URL since repository/runbook and hook result do not provide it.
+- Scope comparison: expected MIME files and A-002 stream notebook/artifact paths only; actual application/recovery implementation remains the accepted 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b. Record-only status/review-stamp corrections do not change implementation and will not restart source review or passed tests.
+
+## [RUN-010] Event — 2026-10-04 16:35:46 (during round A-002)
+
+- Completion-record correction only: refresh tracker Last update to cover latest checkpoint. Prior checkpoint proof collection requires a bold Scope check key rather than equivalent unbold prose; this fresh canonical RUN/checkpoint supplies that recovery proof without changing historical facts or reviewed implementation.
+- **Scope check:** actual Git paths are the accepted MIME source/test in committed implementation, active stream notebook and A-002 artifact directory. Root checkout's prior three dirty records are unchanged; all accepted T-1/T-2/T-3 tasks are proven complete. Parser/source tests and substantive reviews are not restarted for these record corrections.
+- Cloudflare rebuild accepted HTTP200/success=true. Formal site URL is pending as an optional public-content verification; candidate same-name site serves old sample data and is not treated as success.
+
+## [WIP-004] Checkpoint — 2026-10-04 16:35:46 (during round A-002)
+
+- **Finished:** verified parser fix, deployment at 100% traffic, all 24 published CMS content restorations and accepted website rebuild request.
+- **Running now:** final record/preflight/commit closeout only.
+- **Still to do:** optional public website freshness check requires its formal URL; accepted implementation/deployment/restoration tasks are complete.
+- **Next work action:** save the complete Reply, run mechanical preflight, commit/push records and report actual limits.
+
+[x] tracker.md | [x] devlog RUN | [x] scope matches tracker
+
+## [RUN-011] Event — 2026-10-04 16:38:26 (during round A-002)
+
+- Product objective complete: tested/reviewed parser deployed, 24 published stories structurally read-back verified, Cloudflare rebuild accepted. Complete owner report preserved at .agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/reply-draft.md after standard-input Reply append failed and the permitted file-input fallback also failed.
+- Protocol stop: no further implementation tests/reviews or repeated closeout validation. Reply writer's candidate checker rejects historical checkpoint footer spans after intervening RUN events, despite append-wip accepting those checkpoints and append-run accepting the intervening events. Strict STATUS separately rejects the legitimate dotted config path. These are bookkeeping limits, not a product failure. No checker bypass or skill-source modification.
+- Complete tracker validates; exact implementation 2ef8faa45ace6d483cf292f7bea53d39d6dd4e6b is already pushed. Remaining action is commit/push owned records and report the actual workflow/public-URL limits.

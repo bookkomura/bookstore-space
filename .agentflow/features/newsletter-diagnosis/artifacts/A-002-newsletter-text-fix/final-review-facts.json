@@ -1,0 +1,14 @@
+{
+  "changed_files": [
+    ".agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/recover-content.mjs",
+    ".agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/recovery-dry-run.json",
+    ".agentflow/features/newsletter-diagnosis/artifacts/A-002-newsletter-text-fix/recovery-plan.md",
+    "services/newsletter-sync/src/mime.ts",
+    "services/newsletter-sync/test/mime.test.ts"
+  ],
+  "changed_lines": 988,
+  "behavior_change": true,
+  "trust_boundary": true,
+  "broad_change": false,
+  "consequential_change": false
+}

@@ -1,0 +1,16 @@
+{
+  "httpStatus": 200,
+  "responseType": "application/json; charset=UTF-8",
+  "success": true,
+  "keys": [
+    "result",
+    "success",
+    "errors",
+    "messages"
+  ],
+  "errorCodes": [],
+  "resultKeys": [
+    "id"
+  ],
+  "deployment": null
+}
