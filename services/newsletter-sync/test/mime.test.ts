@@ -142,6 +142,108 @@ describe('parseNewsletterMime', () => {
     expect(parsed.blocks).toEqual([{ type: 'paragraph', text: '安全內容' }])
   })
 
+  it('keeps colored, highlighted, and bold text in div paragraphs', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime(
+        '<div>嗨～</div><div>阿～～<span style="color:red"><b>至少我們很好停車</b></span>（？</div>' +
+        '<div><strong>空間新又大、光線美氣氛佳</strong>、</div>' +
+        '<div>我們這個村，<font color="#ff00ff">有村民還有你</font>，</div>' +
+        '<div>還有一大堆<mark>雨後春筍</mark>的有趣活動耶</div>',
+      ),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '嗨～' },
+      { type: 'paragraph', text: '阿～～至少我們很好停車（？' },
+      { type: 'paragraph', text: '空間新又大、光線美氣氛佳、' },
+      { type: 'paragraph', text: '我們這個村，有村民還有你，' },
+      { type: 'paragraph', text: '還有一大堆雨後春筍的有趣活動耶' },
+    ])
+  })
+
+  it('keeps inline link labels in the sentence and retains HTTPS action links', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<div>下周有<a href="https://example.test/civil"><span>民防</span></a>、' +
+        '<a href="https://example.test/flowers">花藝</a>、讀書會</div>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '下周有民防、花藝、讀書會' },
+      { type: 'link', label: '民防', href: 'https://example.test/civil' },
+      { type: 'link', label: '花藝', href: 'https://example.test/flowers' },
+    ])
+  })
+
+  it.each(['http://example.test', 'javascript:alert(1)', 'mailto:reader@example.test', 'invalid'])(
+    'keeps inline text without emitting an unsafe link: %s',
+    async (href) => {
+      const parsed = await parseNewsletterMime(rawMime(`<div>參加<a href="${href}">活動</a>吧</div>`))
+
+      expect(parsed.blocks).toEqual([{ type: 'paragraph', text: '參加活動吧' }])
+    },
+  )
+
+  it('keeps nested blocks and surrounding text in source order without duplicates', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<div>開頭<span>文字</span><div><b>內層段落</b></div>接續文字' +
+        '<p>另一段<em>文字</em></p><ul><li><div>項目一</div></li><li>項目二</li></ul>' +
+        '圖片之前<img src="cid:photo-1" alt="山景"><span>圖片之後</span><hr>結尾</div>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '開頭文字' },
+      { type: 'paragraph', text: '內層段落' },
+      { type: 'paragraph', text: '接續文字' },
+      { type: 'paragraph', text: '另一段文字' },
+      { type: 'paragraph', text: '項目一' },
+      { type: 'paragraph', text: '項目二' },
+      { type: 'paragraph', text: '圖片之前' },
+      { type: 'image', cid: 'photo-1', alt: '山景' },
+      { type: 'paragraph', text: '圖片之後' },
+      { type: 'divider' },
+      { type: 'paragraph', text: '結尾' },
+    ])
+  })
+
+  it('separates words around line breaks inside formatted text', async () => {
+    const parsed = await parseNewsletterMime(rawMime('<div><span>first<br>second</span></div>'))
+
+    expect(parsed.blocks).toEqual([{ type: 'paragraph', text: 'first second' }])
+  })
+
+  it('keeps standalone action links without repeating their labels as paragraphs', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<div><a href="https://example.test"><b>報名活動</b></a></div>'),
+    )
+
+    expect(parsed.blocks).toEqual([{ type: 'link', label: '報名活動', href: 'https://example.test' }])
+  })
+
+  it('retains CID images inside standalone anchors before their links', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<a href="https://example.test"><img src="cid:photo-1" alt="山景"></a>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'image', cid: 'photo-1', alt: '山景' },
+      { type: 'link', label: '', href: 'https://example.test' },
+    ])
+  })
+
+  it('consumes the entire formatted caption without repeating its nested blocks or links', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<p>前言</p><img src="cid:photo-1" alt="山景"><br>' +
+        '<div><div><span style="color:red">圖片</span><a href="https://example.test">說明</a></div></div>' +
+        '<div>後續段落</div>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '前言' },
+      { type: 'image', cid: 'photo-1', alt: '山景', caption: '圖片說明' },
+      { type: 'paragraph', text: '後續段落' },
+    ])
+  })
+
   it('drops script, style, and noscript content from paragraphs', async () => {
     const parsed = await parseNewsletterMime(
       rawMime('<p>安全文字<script>window.alert("x")</script><style>.hidden { display: none }</style><noscript>替代文字</noscript></p>'),

@@ -70,50 +70,80 @@ function parseHtmlBlocks(html: string): ParsedBlock[] {
   $('script,style,noscript').remove()
   const captionElements = new Set<unknown>()
   const blocks: ParsedBlock[] = []
+  type Paragraph = { text: string; links: Extract<ParsedBlock, { type: 'link' }>[] }
 
-  $(`${PARAGRAPH_SELECTOR},div,img[src^="cid:"],a[href],hr`).each((_, element) => {
-    if (captionElements.has(element)) return
-    const node = $(element)
-
-    if (element.tagName === 'img') {
-      const cid = normalizeCid(node.attr('src')?.slice('cid:'.length))
-      if (!cid) return
-      const captionNode = followingCaptionNode(node)
-      const caption = captionNode.length === 1 ? normalizeText(captionNode.text()) : ''
-      if (caption) captionElements.add(captionNode.get(0))
-      blocks.push({
-        type: 'image',
-        cid,
-        alt: normalizeText(node.attr('alt') ?? ''),
-        ...(caption ? { caption } : {}),
-      })
-      return
+  function flush(paragraph?: Paragraph) {
+    if (!paragraph) return
+    const text = normalizeText(paragraph.text)
+    const linkText = normalizeText(paragraph.links.map((link) => link.label).join(''))
+    // A standalone action link already carries its label; inline links need the full sentence.
+    if (text && (paragraph.links.length === 0 || text !== linkText)) {
+      blocks.push({ type: 'paragraph', text })
     }
+    blocks.push(...paragraph.links)
+    paragraph.text = ''
+    paragraph.links = []
+  }
 
-    if (element.tagName === 'a') {
+  function walk(nodes: ReturnType<typeof $>, paragraph?: Paragraph) {
+    nodes.each((_, element) => {
+      if (captionElements.has(element)) return
+      if (element.type === 'text') {
+        if (paragraph) paragraph.text += element.data
+        return
+      }
+      if (element.type !== 'tag') return
+      const node = $(element)
+
+      if (node.is(`${PARAGRAPH_SELECTOR},div`)) {
+        flush(paragraph)
+        const nested: Paragraph = { text: '', links: [] }
+        walk(node.contents(), nested)
+        flush(nested)
+        return
+      }
+
+      if (node.is('img[src^="cid:"]')) {
+        const cid = normalizeCid(node.attr('src')?.slice('cid:'.length))
+        if (!cid) return
+        flush(paragraph)
+        const captionNode = followingCaptionNode(node)
+        const caption = captionNode.length === 1 ? normalizeText(captionNode.text()) : ''
+        if (caption) captionElements.add(captionNode.get(0))
+        blocks.push({
+          type: 'image',
+          cid,
+          alt: normalizeText(node.attr('alt') ?? ''),
+          ...(caption ? { caption } : {}),
+        })
+        return
+      }
+
+      if (element.tagName === 'hr') {
+        flush(paragraph)
+        blocks.push({ type: 'divider' })
+        return
+      }
+
       const href = node.attr('href')
-      if (!href || !isHttpsUrl(href)) return
-      blocks.push({ type: 'link', label: normalizeText(node.text()), href })
-      return
-    }
+      if (element.tagName === 'a' && href !== undefined) {
+        walk(node.contents(), paragraph)
+        if (isHttpsUrl(href)) {
+          const link = { type: 'link' as const, label: normalizeText(node.text()), href }
+          if (paragraph) paragraph.links.push(link)
+          else blocks.push(link)
+        }
+        return
+      }
 
-    if (element.tagName === 'hr') {
-      blocks.push({ type: 'divider' })
-      return
-    }
+      if (element.tagName === 'br' && paragraph) paragraph.text += ' '
+      else walk(node.contents(), paragraph)
+    })
+  }
 
-    const text = normalizeText(element.tagName === 'div' ? directText(node) : node.text())
-    if (text) blocks.push({ type: 'paragraph', text })
-  })
+  walk($.root().contents())
 
   return blocks
-}
-
-function directText(node: ReturnType<ReturnType<typeof load>>): string {
-  return node
-    .contents()
-    .filter((_, child) => child.type === 'text')
-    .text()
 }
 
 function followingCaptionNode(node: ReturnType<ReturnType<typeof load>>) {
