@@ -149,7 +149,9 @@ function parseHtmlBlocks(html: string): ParsedBlock[] {
 function followingCaptionNode(node: ReturnType<ReturnType<typeof load>>) {
   const next = node.next()
   const captionSelector = `${PARAGRAPH_SELECTOR},div`
-  return next.is('br') ? next.next(captionSelector).first() : next.filter(captionSelector)
+  const candidate = next.is('br') ? next.next(captionSelector).first() : next.filter(captionSelector)
+  // A layout container holding more content is not a caption subtree we can consume.
+  return candidate.find('img,hr').length > 0 ? candidate.slice(0, 0) : candidate
 }
 
 function isHttpsUrl(value: string): boolean {

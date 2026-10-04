@@ -244,6 +244,22 @@ describe('parseNewsletterMime', () => {
     ])
   })
 
+  it('does not consume a following image or divider as part of a container caption', async () => {
+    const parsed = await parseNewsletterMime(
+      rawMime('<p>前言</p><img src="cid:photo-1" alt="第一張">' +
+        '<div><div>中間文字</div><img src="cid:photo-2" alt="第二張"><hr><div>結尾</div></div>'),
+    )
+
+    expect(parsed.blocks).toEqual([
+      { type: 'paragraph', text: '前言' },
+      { type: 'image', cid: 'photo-1', alt: '第一張' },
+      { type: 'paragraph', text: '中間文字' },
+      { type: 'image', cid: 'photo-2', alt: '第二張' },
+      { type: 'divider' },
+      { type: 'paragraph', text: '結尾' },
+    ])
+  })
+
   it('drops script, style, and noscript content from paragraphs', async () => {
     const parsed = await parseNewsletterMime(
       rawMime('<p>安全文字<script>window.alert("x")</script><style>.hidden { display: none }</style><noscript>替代文字</noscript></p>'),
