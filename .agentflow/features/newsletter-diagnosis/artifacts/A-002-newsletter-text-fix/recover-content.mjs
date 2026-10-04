@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import cp from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 
 // One-off recovery. Inputs and backups stay in a private temporary directory.
 const privateRoot = '/private/tmp/newsletter-recovery-private'
@@ -90,9 +91,13 @@ if (!applying) {
     if (!response.ok) throw new Error('Storyblok status ' + response.status)
     return (await response.json()).story
   }
+  const restored = (current, plan) => current.published === true && current.unpublished_changes !== true &&
+    isDeepStrictEqual(current.content, plan.content) && current.name === plan.publicIdentity.name &&
+    current.slug === plan.publicIdentity.slug && current.parent_id === plan.publicIdentity.parent_id
   // Validate all candidates again before the first write; refuse drafts or concurrent changes.
   for (const plan of plans) {
     const current = await request(plan.id)
+    if (restored(current, plan)) continue
     if (current.published !== true || current.unpublished_changes === true || hash(current.content) !== plan.beforeHash || current.updated_at !== plan.beforeUpdatedAt || current.published_at !== plan.beforePublishedAt) {
       throw new Error('Story changed since dry run: ' + plan.id)
     }
@@ -100,12 +105,18 @@ if (!applying) {
   const updated = []
   for (const plan of plans) {
     const current = await request(plan.id)
+    if (restored(current, plan)) {
+      updated.push(plan.id)
+      fs.writeFileSync(privateRoot + '/updated-stories.json', JSON.stringify(updated), { mode: 0o600 })
+      console.log(JSON.stringify({ alreadyRestored: plan.id, verified: true }))
+      continue
+    }
     if (current.unpublished_changes === true || hash(current.content) !== plan.beforeHash || current.updated_at !== plan.beforeUpdatedAt || current.published_at !== plan.beforePublishedAt) {
       throw new Error('Concurrent edit: ' + plan.id)
     }
     await request(plan.id, { method: 'PUT', body: JSON.stringify({ publish: true, story: { id: plan.id, name: current.name, slug: current.slug, content: plan.content } }) })
     const verified = await request(plan.id)
-    if (verified.published !== true || hash(verified.content) !== hash(plan.content) || verified.name !== current.name || verified.slug !== current.slug || verified.parent_id !== current.parent_id) {
+    if (!restored(verified, plan)) {
       throw new Error('Read-back mismatch: ' + plan.id)
     }
     updated.push(plan.id)
